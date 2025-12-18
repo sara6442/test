@@ -2,9 +2,26 @@
 let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
 
 function saveTask(task) {
+    // التحقق من السعة قبل الإضافة
+    if (typeof categoryManager !== 'undefined') {
+        if (!categoryManager.canAddTask(task.category, task.duration)) {
+            const category = categoryManager.getCategory(task.category);
+            const remaining = categoryManager.getRemainingTime(task.category);
+            
+            alert(`❌ لا يمكن إضافة هذه المهمة!\nالمدة المطلوبة: ${task.duration} دقيقة\nالوقت المتبقي في الفئة: ${remaining} دقيقة\nسعة الفئة: ${category.totalMinutes} دقيقة`);
+            return null;
+        }
+    }
+    
     tasks.push(task);
     localStorage.setItem('tasks', JSON.stringify(tasks));
     console.log('تم حفظ المهمة:', task);
+    
+    // تحديث وقت الفئة المستخدم
+    if (typeof categoryManager !== 'undefined') {
+        categoryManager.calculateUsedTime(task.category);
+    }
+    
     return task;
 }
 
