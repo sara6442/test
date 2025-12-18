@@ -194,4 +194,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // تعريف دالة لحذف المهمة
 function deleteTaskHandler(taskId) {
-    if (confirm('هل أنت مت
+    if (confirm('هل أنت متأكد من حذف هذه المهمة؟')) {
+        if (typeof deleteTask === 'function') {
+            const success = deleteTask(taskId);
+            if (success) {
+                if (typeof loadTasks === 'function') loadTasks();
+                if (typeof updateCalendar === 'function') updateCalendar();
+                if (typeof categoryManager !== 'undefined' && 
+                    typeof categoryManager.updateSelectedCategoryChart === 'function') {
+                    categoryManager.updateSelectedCategoryChart();
+                }
+                if (typeof updateDailyChart === 'function') updateDailyChart();
+                alert('🗑️ تم حذف المهمة بنجاح!');
+            }
+        }
+    }
+}
+
+window.deleteTaskHandler = deleteTaskHandler;
