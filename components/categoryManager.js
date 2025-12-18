@@ -123,6 +123,304 @@ const categoryManager = new CategoryManager();
 
 // تهيئة Charts عند تحميل الصفحة
 function initCharts() {
+    console.log('تهيئة Charts...');
+    
+    // تحديث الأوقات المستخدمة أولاً
+    Object.keys(categoryManager.getAllCategories()).forEach(categoryId => {
+        categoryManager.calculateUsedTime(categoryId);
+    });
+    
+    // تحديث جميع Charts
+    updateAllCharts();
+}
+
+// تحديث جميع Charts
+function updateAllCharts() {
+    console.log('تحديث جميع Charts...');
+    
+    Object.keys(categoryManager.getAllCategories()).forEach(categoryId => {
+        updateCategoryChart(categoryId);
+    });
+}
+
+// تحديث Chart لفئة محددة
+function updateCategoryChart(categoryId) {
+    const category = categoryManager.getCategory(categoryId);
+    if (!category) return;
+    
+    const ctx = document.getElementById(`${categoryId}-chart`);
+    if (!ctx) {
+        console.log(`لم يتم العثور على canvas للفئة: ${categoryId}`);
+        return;
+    }
+    
+    // حساب النسب
+    const usedMinutes = categoryManager.calculateUsedTime(categoryId);
+    const percentage = categoryManager.getPercentage(categoryId);
+    const status = categoryManager.getStatus(categoryId);
+    
+    // إذا كان الرسم البياني موجوداً، قم بتدميره أولاً
+    if (window[`${categoryId}Chart`]) {
+        window[`${categoryId}Chart`].destroy();
+    }
+    
+    // إنشاء الرسم البياني
+    const backgroundColor = category.enabled ? [category.color, '#f0f0f0'] : ['#cccccc', '#f0f0f0'];
+    
+    window[`${categoryId}Chart`] = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            datasets: [{
+                data: [usedMinutes, Math.max(0, category.totalMinutes - usedMinutes)],
+                backgroundColor: backgroundColor,
+                borderWidth: 0,
+                cutout: '70%'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: { enabled: false }
+            }
+        }
+    });
+    
+    // تحديث العناصر المرئية
+    const wrapper = document.querySelector(`[data-category="${categoryId}"]`);
+    if (!wrapper) return;
+    
+    const progressFill = wrapper.querySelector('.progress-fill');
+    const progressText = wrapper.querySelector('.progress-text');
+    const timeInfo = wrapper.querySelector('.chart-time-info span:first-child');
+    const statusElement = document.getElementById(`${categoryId}-status`);
+    
+    if (progressFill) {
+        progressFill.style.width = `${percentage}%`;
+        progressFill.style.backgroundColor = category.color;
+    }
+    
+    if (progressText) {
+        progressText.textContent = `${percentage}% مكتمل`;
+    }
+    
+    if (timeInfo) {
+        const totalFormatted = categoryManager.formatTime(category.totalMinutes);
+        const usedFormatted = categoryManager.formatTime(usedMinutes);
+        timeInfo.innerHTML = `<i class="far fa-clock"></i> ${usedFormatted}/${totalFormatted}`;
+    }
+    
+    if (statusElement) {
+        statusElement.textContent = status;
+        statusElement.className = 'status';
+        
+        if (status === 'ممتلئة') {
+            statusElement.classList.add('status-full');
+            wrapper.classList.add('locked');
+        } else if (status === 'شبه ممتلئة') {
+            statusElement.classList.add('status-warning');
+            wrapper.classList.remove('locked');
+        } else if (status === 'متاحة') {
+            statusElement.classList.add('status-available');
+            wrapper.classList.remove('locked');
+        } else if (status === 'معطلة') {
+            wrapper.classList.add('chart-disabled');
+        }
+    }
+    
+    // تحديث زر الإضافة
+    const addButton = wrapper.querySelector('.btn-add-to-category');
+    if (addButton) {
+        if (!category.enabled || percentage >= 100) {
+            addButton.disabled = true;
+            addButton.innerHTML = '<i class="fas fa-lock"></i> غير متاح';
+        } else {
+            addButton.disabled = false;
+            addButton.innerHTML = '<i class="fas fa-plus"></i> إضافة مهمة لهذه الفئة';
+        }
+    }
+}
+
+// دالة لتحميل إعدادات Chart
+function loadChartSettings(categoryId) {
+    console.log(`تحميل إعدادات Chart: ${categoryId}`);
+    
+    const category = categoryManager.getCategory(categoryId);
+    if (!category) return;
+    
+    // تحديث حقول الإدخال
+    const totalHoursInput = document.getElementById('total-hours');
+    const totalMinutesInput = document.getElementById('total-minutes');
+    const colorInput = document.getElementById('category-color');
+    const enabledInput = document.getElementById('category-enabled');
+    const statusText = document.getElementById('status-text');
+    
+    if (totalHoursInput) totalHoursInput.value = Math.floor(category.totalMinutes / 60);
+    if (totalMinutesInput) totalMinutesInput.value = category.totalMinutes % 60;
+    if (colorInput) colorInput.value = category.color;
+    if (enabledInput) enabledInput.checked = category.enabled;
+    if (statusText) statusText.textContent = category.enabled ? 'مفعلة' : 'معطلة';
+    
+    // تحديث الإحصائيات
+    const usedMinutes = categoryManager.calculateUsedTime(categoryId);
+    const remainingMinutes = categoryManager.getRemainingTime(categoryId);
+    const percentage = categoryManager.getPercentage(categoryId);
+    const taskCount = getTasksByCategory ? getTasksByCategory(categoryId).length : 0;
+    
+    const usedTimeEl = document.getElementById('used-time');
+    const remainingTimeEl = document.getElementById('remaining-time');
+    const percentageEl = document.getElementById('percentage');
+    const taskCountEl = document.getElementById('task-count');
+    
+    if (usedTimeEl) usedTimeEl.textContent = categoryManager.formatTime(usedMinutes);
+    if (remainingTimeEl) remainingTimeEl.textContent = categoryManager.formatTime(remainingMinutes);
+    if (percentageEl) percentageEl.textContent = `${percentage}%`;
+    if (taskCountEl) taskCountEl.textContent = taskCount;
+}
+
+// تعريف الدوال للنافذة العالمية
+window.categoryManager = categoryManager;
+window.updateAllCharts = updateAllCharts;
+window.updateCategoryChart = updateCategoryChart;
+window.initCharts = initCharts;
+window.loadChartSettings = loadChartSettings;
+
+// تهيئة Charts عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('صفحة Charts محملة، تهيئة...');
+    
+    // انتظر قليلاً لضمان تحميل جميع العناصر
+    setTimeout(() => {
+        if (typeof initCharts === 'function') {
+            initCharts();
+        }
+    }, 500);
+});// إدارة الفئات والـ Charts
+class CategoryManager {
+    constructor() {
+        this.categories = JSON.parse(localStorage.getItem('categories')) || this.getDefaultCategories();
+        this.saveCategories();
+    }
+    
+    getDefaultCategories() {
+        return {
+            personal: {
+                name: 'المهام الشخصية',
+                color: '#4a90e2',
+                totalMinutes: 120, // ساعتين
+                enabled: true,
+                usedMinutes: 0
+            },
+            work: {
+                name: 'العمل',
+                color: '#7b68ee',
+                totalMinutes: 480, // 8 ساعات
+                enabled: true,
+                usedMinutes: 0
+            },
+            study: {
+                name: 'الدراسة',
+                color: '#2ecc71',
+                totalMinutes: 180, // 3 ساعات
+                enabled: true,
+                usedMinutes: 0
+            },
+            health: {
+                name: 'الصحة',
+                color: '#e74c3c',
+                totalMinutes: 60, // ساعة واحدة
+                enabled: true,
+                usedMinutes: 0
+            }
+        };
+    }
+    
+    saveCategories() {
+        localStorage.setItem('categories', JSON.stringify(this.categories));
+    }
+    
+    updateCategory(categoryId, updates) {
+        if (this.categories[categoryId]) {
+            this.categories[categoryId] = { ...this.categories[categoryId], ...updates };
+            this.saveCategories();
+            return true;
+        }
+        return false;
+    }
+    
+    getCategory(categoryId) {
+        return this.categories[categoryId] || null;
+    }
+    
+    getAllCategories() {
+        return this.categories;
+    }
+    
+    calculateUsedTime(categoryId) {
+        const categoryTasks = getTasksByCategory(categoryId);
+        const totalMinutes = categoryTasks.reduce((sum, task) => {
+            return sum + (task.completed ? task.duration : 0);
+        }, 0);
+        
+        this.updateCategory(categoryId, { usedMinutes: totalMinutes });
+        return totalMinutes;
+    }
+    
+    getRemainingTime(categoryId) {
+        const category = this.getCategory(categoryId);
+        if (!category) return 0;
+        
+        const remaining = category.totalMinutes - category.usedMinutes;
+        return Math.max(0, remaining);
+    }
+    
+    getPercentage(categoryId) {
+        const category = this.getCategory(categoryId);
+        if (!category || category.totalMinutes === 0) return 0;
+        
+        return Math.round((category.usedMinutes / category.totalMinutes) * 100);
+    }
+    
+    canAddTask(categoryId, duration) {
+        const category = this.getCategory(categoryId);
+        if (!category || !category.enabled) return false;
+        
+        const remaining = this.getRemainingTime(categoryId);
+        return remaining >= duration;
+    }
+    
+    getStatus(categoryId) {
+        const category = this.getCategory(categoryId);
+        if (!category) return 'غير موجود';
+        
+        if (!category.enabled) return 'معطلة';
+        
+        const percentage = this.getPercentage(categoryId);
+        if (percentage >= 100) return 'ممتلئة';
+        if (percentage >= 80) return 'شبه ممتلئة';
+        return 'متاحة';
+    }
+    
+    formatTime(minutes) {
+        const hours = Math.floor(minutes / 60);
+        const mins = minutes % 60;
+        
+        if (hours > 0 && mins > 0) {
+            return `${hours} ساعة ${mins} دقيقة`;
+        } else if (hours > 0) {
+            return `${hours} ساعة`;
+        } else {
+            return `${mins} دقيقة`;
+        }
+    }
+}
+
+// إنشاء كائن عالمي لإدارة الفئات
+const categoryManager = new CategoryManager();
+
+// تهيئة Charts عند تحميل الصفحة
+function initCharts() {
     // تحديث الأوقات المستخدمة أولاً
     Object.keys(categoryManager.getAllCategories()).forEach(categoryId => {
         categoryManager.calculateUsedTime(categoryId);
