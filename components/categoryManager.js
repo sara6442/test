@@ -374,6 +374,54 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+// دالة لتحميل إعدادات Chart (تأكد من وجودها)
+function loadChartSettings(categoryId) {
+    const category = categoryManager.getCategory(categoryId);
+    if (!category) return;
+    
+    // تحديث النموذج
+    document.getElementById('total-hours').value = Math.floor(category.totalMinutes / 60);
+    document.getElementById('total-minutes').value = category.totalMinutes % 60;
+    document.getElementById('category-color').value = category.color;
+    document.getElementById('category-enabled').checked = category.enabled;
+    
+    // تحديث نص الحالة
+    const statusText = document.getElementById('status-text');
+    if (statusText) {
+        statusText.textContent = category.enabled ? 'مفعلة' : 'معطلة';
+    }
+    
+    // تحديث الإحصائيات
+    const usedMinutes = categoryManager.calculateUsedTime(categoryId);
+    const remainingMinutes = categoryManager.getRemainingTime(categoryId);
+    const percentage = categoryManager.getPercentage(categoryId);
+    const taskCount = getTasksByCategory(categoryId).length;
+    
+    // تحديث العناصر
+    const usedTimeEl = document.getElementById('used-time');
+    const remainingTimeEl = document.getElementById('remaining-time');
+    const percentageEl = document.getElementById('percentage');
+    const taskCountEl = document.getElementById('task-count');
+    
+    if (usedTimeEl) usedTimeEl.textContent = categoryManager.formatTime(usedMinutes);
+    if (remainingTimeEl) remainingTimeEl.textContent = categoryManager.formatTime(remainingMinutes);
+    if (percentageEl) percentageEl.textContent = `${percentage}%`;
+    if (taskCountEl) taskCountEl.textContent = taskCount;
+}
+
+// تعريف الدوال للنافذة العالمية
+window.loadChartSettings = loadChartSettings;
+
+// عند تحميل الصفحة، تأكد من تحديث Charts
+document.addEventListener('DOMContentLoaded', function() {
+    // انتظر قليلاً لضمان تحميل جميع الملفات
+    setTimeout(() => {
+        if (typeof initCharts === 'function') {
+            initCharts();
+        }
+    }, 100);
+});
+
 // تعريف الدوال للنافذة العالمية
 window.categoryManager = categoryManager;
 window.updateAllCharts = updateAllCharts;
