@@ -31,6 +31,10 @@
                         <i class="fas fa-chart-pie"></i>
                         <span>الإحصائيات</span>
                     </li>
+                    <li data-view="categories">
+                        <i class="fas fa-layer-group"></i>
+                        <span>إدارة الفئات</span>
+                    </li>
                 </ul>
             </nav>
         </aside>
@@ -67,10 +71,7 @@
                         <div class="form-group">
                             <label for="task-category">الفئة:</label>
                             <select id="task-category">
-                                <option value="personal">مهام شخصية</option>
-                                <option value="work">عمل</option>
-                                <option value="study">دراسة</option>
-                                <option value="health">صحة</option>
+                                <!-- سيتم ملؤها ديناميكياً -->
                             </select>
                         </div>
                         
@@ -104,6 +105,63 @@
                 </div>
             </div>
 
+            <!-- نافذة إدارة الفئات -->
+            <div id="category-modal" class="modal">
+                <div class="modal-content">
+                    <span class="close-modal" id="close-category-modal">&times;</span>
+                    <h2 id="category-modal-title">إضافة فئة جديدة</h2>
+                    <form id="category-form">
+                        <div class="form-group">
+                            <label for="category-name">اسم الفئة:</label>
+                            <input type="text" id="category-name" placeholder="أدخل اسم الفئة" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="category-color">لون الفئة:</label>
+                            <input type="color" id="category-color" value="#4a90e2">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="category-icon">أيقونة:</label>
+                            <select id="category-icon">
+                                <option value="user">👤 شخصية</option>
+                                <option value="briefcase">💼 عمل</option>
+                                <option value="book">📚 دراسة</option>
+                                <option value="heart">❤️ صحة</option>
+                                <option value="home">🏠 منزل</option>
+                                <option value="shopping-cart">🛒 تسوق</option>
+                                <option value="dumbbell">🏋️ رياضة</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="category-hours">السعة اليومية (ساعات):</label>
+                            <div class="capacity-input">
+                                <input type="range" id="category-hours" min="0.5" max="8" step="0.5" value="2">
+                                <span id="capacity-value">2 ساعة</span>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="category-enabled">تفعيل الفئة:</label>
+                            <label class="switch">
+                                <input type="checkbox" id="category-enabled" checked>
+                                <span class="slider"></span>
+                            </label>
+                            <span id="category-status">مفعلة</span>
+                        </div>
+                        
+                        <input type="hidden" id="category-id">
+                        
+                        <div class="form-actions">
+                            <button type="button" id="cancel-category" class="btn-secondary">إلغاء</button>
+                            <button type="button" id="delete-category" class="btn-danger" style="display:none;">حذف الفئة</button>
+                            <button type="submit" class="btn-primary">حفظ الفئة</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
             <!-- نافذة إعدادات Charts -->
             <div id="chart-settings-modal" class="modal">
                 <div class="modal-content">
@@ -113,10 +171,7 @@
                         <div class="form-group">
                             <label>اختر Chart للتعديل:</label>
                             <select id="selected-chart">
-                                <option value="personal">المهام الشخصية</option>
-                                <option value="work">العمل</option>
-                                <option value="study">الدراسة</option>
-                                <option value="health">الصحة</option>
+                                <!-- سيتم ملؤها ديناميكياً -->
                             </select>
                         </div>
                         
@@ -253,22 +308,7 @@
                 <div class="categories-mini">
                     <h3>الفئات</h3>
                     <div class="mini-categories-list">
-                        <div class="mini-category active" data-category="personal">
-                            <div class="mini-color" style="background: #4a90e2;"></div>
-                            <span class="mini-name">شخصية</span>
-                        </div>
-                        <div class="mini-category" data-category="work">
-                            <div class="mini-color" style="background: #7b68ee;"></div>
-                            <span class="mini-name">عمل</span>
-                        </div>
-                        <div class="mini-category" data-category="study">
-                            <div class="mini-color" style="background: #2ecc71;"></div>
-                            <span class="mini-name">دراسة</span>
-                        </div>
-                        <div class="mini-category" data-category="health">
-                            <div class="mini-color" style="background: #e74c3c;"></div>
-                            <span class="mini-name">صحة</span>
-                        </div>
+                        <!-- سيتم ملؤها ديناميكياً -->
                     </div>
                 </div>
                 
@@ -306,6 +346,54 @@
                                     <span class="detail-value" id="category-task-count">0</span>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- إدارة الفئات -->
+            <section id="categories-view" class="content-view">
+                <div class="categories-header">
+                    <h2>إدارة الفئات</h2>
+                    <button id="add-category-btn" class="btn-primary">
+                        <i class="fas fa-plus"></i> إضافة فئة جديدة
+                    </button>
+                </div>
+                
+                <div class="categories-management">
+                    <div class="categories-list">
+                        <!-- الفئات ستظهر هنا -->
+                    </div>
+                    
+                    <div class="categories-summary">
+                        <h3>ملخص الفئات</h3>
+                        <div class="summary-stats">
+                            <div class="stat-card">
+                                <span class="stat-value" id="total-categories">0</span>
+                                <span class="stat-label">الفئات</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-value" id="total-capacity">0 ساعة</span>
+                                <span class="stat-label">السعة الكلية</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-value" id="total-used">0 ساعة</span>
+                                <span class="stat-label">المستخدم</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-value" id="total-remaining">0 ساعة</span>
+                                <span class="stat-label">المتبقي</span>
+                            </div>
+                        </div>
+                        
+                        <div class="categories-instructions">
+                            <h4>كيف تعمل سعة الفئات:</h4>
+                            <ul>
+                                <li>❌ لا يمكن إضافة مهام تتجاوز السعة المحددة</li>
+                                <li>📊 الرسم البياني يظهر النسبة المستخدمة</li>
+                                <li>🎨 يمكنك تعديل الألوان لكل فئة</li>
+                                <li>⏰ السعة تحسب بالدقائق لكل فئة يومياً</li>
+                            </ul>
                         </div>
                     </div>
                 </div>
