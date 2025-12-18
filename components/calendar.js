@@ -65,13 +65,17 @@ function renderWeekCalendar() {
     container.innerHTML = `
         <div class="week-header">
             <h3>جدول الأسبوع</h3>
+            <div class="week-info">
+                <span>من ${formatDate(startOfWeek)} إلى ${formatDate(new Date(startOfWeek.getTime() + 6 * 24 * 60 * 60 * 1000))}</span>
+            </div>
         </div>
         <div class="week-days-container">
             ${generateWeekDays(startOfWeek)}
         </div>
     `;
     
-    document.getElementById('selected-period').textContent = "الأسبوع";
+    const weekNumber = getWeekNumber(currentDate);
+    document.getElementById('selected-period').textContent = `الأسبوع ${weekNumber}`;
 }
 
 function renderMonthCalendar() {
@@ -81,12 +85,20 @@ function renderMonthCalendar() {
     
     const monthName = currentDate.toLocaleDateString('ar-SA', { month: 'long' });
     
+    // ترويسة الشهر مع أيام الأسبوع
+    const dayHeaders = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+    
     container.innerHTML = `
         <div class="month-header">
             <h3>${monthName} ${year}</h3>
         </div>
-        <div class="month-grid">
-            ${generateMonthDays(year, month)}
+        <div class="month-calendar">
+            <div class="week-days-header">
+                ${dayHeaders.map(day => `<div class="week-day-header">${day}</div>`).join('')}
+            </div>
+            <div class="month-days-grid">
+                ${generateMonthDaysGrid(year, month)}
+            </div>
         </div>
     `;
     
@@ -111,12 +123,14 @@ function generateTimeSlots(tasks) {
         tasksInHour.forEach(task => {
             const color = getCategoryColor ? getCategoryColor(task.category) : '#4a90e2';
             const statusClass = task.completed ? 'completed' : '';
+            const categoryName = getCategoryName ? getCategoryName(task.category) : task.category;
+            
             tasksHTML += `
                 <div class="calendar-task ${statusClass}" style="border-right: 4px solid ${color};">
                     <div class="task-time">${task.time || ''}</div>
                     <div class="task-title">${task.title}</div>
                     <div class="task-duration">${task.duration} دقيقة</div>
-                    <div class="task-category-badge" style="background: ${color}22; color: ${color};">${getCategoryName ? getCategoryName(task.category) : task.category}</div>
+                    <div class="task-category-badge" style="background: ${color}22; color: ${color};">${categoryName}</div>
                 </div>
             `;
         });
@@ -137,7 +151,6 @@ function generateTimeSlots(tasks) {
 function generateWeekDays(startDate) {
     let daysHTML = '';
     const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-    const monthNames = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
     
     for (let i = 0; i < 7; i++) {
         const dayDate = new Date(startDate);
@@ -145,14 +158,22 @@ function generateWeekDays(startDate) {
         
         const tasks = getTasksByDate ? getTasksByDate(dayDate) : [];
         const dayStr = dayDate.getDate();
-        const monthStr = monthNames[dayDate.getMonth()];
+        const monthStr = dayDate.toLocaleDateString('ar-SA', { month: 'short' });
         const isToday = isSameDay(dayDate, new Date());
+        const dayName = dayNames[i];
+        
+        // حساب إجمالي وقت المهام لهذا اليوم
+        const totalTime = tasks.reduce((sum, task) => sum + task.duration, 0);
+        const hours = Math.floor(totalTime / 60);
+        const minutes = totalTime % 60;
+        const timeStr = hours > 0 ? `${hours}س ${minutes}د` : `${minutes}د`;
         
         daysHTML += `
             <div class="week-day ${isToday ? 'today' : ''}">
                 <div class="day-header">
-                    <div class="day-name">${dayNames[i]}</div>
+                    <div class="day-name">${dayName}</div>
                     <div class="day-date">${dayStr} ${monthStr}</div>
+                    <div class="day-time">${timeStr}</div>
                 </div>
                 <div class="day-tasks">
                     ${tasks.map(task => {
@@ -173,7 +194,7 @@ function generateWeekDays(startDate) {
     return daysHTML;
 }
 
-function generateMonthDays(year, month) {
+function generateMonthDaysGrid(year, month) {
     let daysHTML = '';
     
     // أول يوم من الشهر
@@ -185,15 +206,9 @@ function generateMonthDays(year, month) {
     // يوم الأسبوع لأول يوم
     const firstDayIndex = firstDay.getDay();
     
-    // أسماء الأيام
-    const dayNames = ['أحد', 'إثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'];
-    
-    // رؤوس الأيام
-    daysHTML += dayNames.map(day => `<div class="day-header">${day}</div>`).join('');
-    
     // فراغات قبل أول يوم
     for (let i = 0; i < firstDayIndex; i++) {
-        daysHTML += '<div class="day empty"></div>';
+        daysHTML += '<div class="month-day empty"></div>';
     }
     
     // أيام الشهر
@@ -203,15 +218,15 @@ function generateMonthDays(year, month) {
         const isToday = isSameDay(dayDate, new Date());
         
         daysHTML += `
-            <div class="day ${isToday ? 'today' : ''} ${tasks.length > 0 ? 'has-tasks' : ''}">
+            <div class="month-day ${isToday ? 'today' : ''} ${tasks.length > 0 ? 'has-tasks' : ''}">
                 <div class="day-number">${day}</div>
                 ${tasks.length > 0 ? `
-                    <div class="day-tasks-count">${tasks.length} مهمة</div>
-                    <div class="day-tasks-preview">
-                        ${tasks.slice(0, 2).map(task => `
-                            <span class="task-dot" style="background: ${getCategoryColor ? getCategoryColor(task.category) : '#4a90e2'}"></span>
-                        `).join('')}
-                        ${tasks.length > 2 ? `<span class="more-tasks">+${tasks.length - 2}</span>` : ''}
+                    <div class="day-tasks-indicator">
+                        ${tasks.slice(0, 3).map(task => {
+                            const color = getCategoryColor ? getCategoryColor(task.category) : '#4a90e2';
+                            return `<span class="task-indicator" style="background: ${color}"></span>`;
+                        }).join('')}
+                        ${tasks.length > 3 ? `<span class="more-indicator">+${tasks.length - 3}</span>` : ''}
                     </div>
                 ` : ''}
             </div>
@@ -221,9 +236,22 @@ function generateMonthDays(year, month) {
     return daysHTML;
 }
 
+function formatDate(date) {
+    return date.toLocaleDateString('ar-SA', {
+        day: 'numeric',
+        month: 'short'
+    });
+}
+
 function calculateTotalTime(tasks) {
     const totalMinutes = tasks.reduce((sum, task) => sum + task.duration, 0);
-    return Math.round(totalMinutes / 60);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    
+    if (hours > 0) {
+        return `${hours} ساعة ${minutes > 0 ? `${minutes} دقيقة` : ''}`.trim();
+    }
+    return `${minutes} دقيقة`;
 }
 
 function calculateCompletedTasks(tasks) {
