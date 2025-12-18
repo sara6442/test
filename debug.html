@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اختبار التطبيق</title>
+    <style>
+        body { font-family: Arial; padding: 20px; direction: rtl; }
+        button { padding: 10px 20px; margin: 10px; font-size: 16px; }
+        #result { margin-top: 20px; padding: 10px; background: #f0f0f0; }
+    </style>
+</head>
+<body>
+    <h1>اختبار ملفات JavaScript</h1>
+    
+    <button id="test-btn">اختبار النقر</button>
+    
+    <div id="result"></div>
+    
+    <script>
+        document.getElementById('test-btn').addEventListener('click', function() {
+            document.getElementById('result').innerHTML = 
+                '<h3 style="color: green;">✅ زر النقر يعمل!</h3>' +
+                '<p>المشكلة ليست في JavaScript الأساسي.</p>' +
+                '<p>تحقق من: ملفات JS في مجلد components/</p>';
+        });
+        
+        console.log('صفحة الاختبار محملة');
+    </script>
+</body>
+</html>
