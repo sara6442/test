@@ -309,6 +309,24 @@
     border: 1px dashed #dee2e6;
 }
 
+/* تنسيقات إدارة الفئات */
+.categories-management {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 25px;
+    margin-top: 20px;
+}
+
+@media (max-width: 768px) {
+    .categories-management {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* كروت إدارة الفئات */
+.category-management-card {
+    background: white;
+   
 /* للشاشات الصغيرة */
 @media (max-width: 768px) {
     .week-days-container {
