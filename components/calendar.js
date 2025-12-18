@@ -1,322 +1,190 @@
-// إدارة الجدول الزمني
-let currentDate = new Date();
-let currentPeriod = 'day'; // day, week, month
+import { getTasksByDate, getTasks } from './taskManager.js';
+import { getCategoryById } from './categoryManager.js';
 
-function updateCalendar() {
-    const container = document.getElementById('calendar-container');
-    if (!container) return;
-    
-    container.innerHTML = '';
-    
-    if (currentPeriod === 'day') {
-        renderDayCalendar();
-    } else if (currentPeriod === 'week') {
-        renderWeekCalendar();
-    } else if (currentPeriod === 'month') {
-        renderMonthCalendar();
-    }
-}
-
-function renderDayCalendar() {
-    const container = document.getElementById('calendar-container');
-    const tasks = getTasksByDate ? getTasksByDate(currentDate) : [];
-    
-    // عنوان اليوم
-    const dateStr = currentDate.toLocaleDateString('ar-SA', {
+// تحميل العرض اليومي
+export function loadDailyView() {
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+    const arabicDate = now.toLocaleDateString('ar-SA', {
         weekday: 'long',
         year: 'numeric',
         month: 'long',
         day: 'numeric'
     });
     
-    // أيام الأسبوع
-    const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-    const todayIndex = currentDate.getDay();
+    const tasks = getTasksByDate(today);
     
-    container.innerHTML = `
-        <div class="day-header">
-            <h3>${dateStr}</h3>
-            <div class="day-summary">
-                <span>${tasks.length} مهمة</span>
-                <span>${calculateTotalTime(tasks)} ساعة</span>
-                <span>${calculateCompletedTasks(tasks)} مكتملة</span>
-            </div>
-        </div>
-        <div class="day-of-week">
-            <span class="week-day-name">${dayNames[todayIndex]}</span>
-        </div>
-        <div class="time-slots">
-            ${generateTimeSlots(tasks)}
-        </div>
-    `;
-    
-    document.getElementById('selected-period').textContent = "اليوم";
-}
-
-function renderWeekCalendar() {
-    const container = document.getElementById('calendar-container');
-    
-    // حساب بداية الأسبوع
-    const startOfWeek = new Date(currentDate);
-    const day = startOfWeek.getDay();
-    const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 0); // الأحد = 0
-    startOfWeek.setDate(diff);
-    
-    container.innerHTML = `
-        <div class="week-header">
-            <h3>جدول الأسبوع</h3>
-            <div class="week-info">
-                <span>من ${formatDate(startOfWeek)} إلى ${formatDate(new Date(startOfWeek.getTime() + 6 * 24 * 60 * 60 * 1000))}</span>
-            </div>
-        </div>
-        <div class="week-days-container">
-            ${generateWeekDays(startOfWeek)}
-        </div>
-    `;
-    
-    const weekNumber = getWeekNumber(currentDate);
-    document.getElementById('selected-period').textContent = `الأسبوع ${weekNumber}`;
-}
-
-function renderMonthCalendar() {
-    const container = document.getElementById('calendar-container');
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    
-    const monthName = currentDate.toLocaleDateString('ar-SA', { month: 'long' });
-    
-    // ترويسة الشهر مع أيام الأسبوع
-    const dayHeaders = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-    
-    container.innerHTML = `
-        <div class="month-header">
-            <h3>${monthName} ${year}</h3>
-        </div>
-        <div class="month-calendar">
-            <div class="week-days-header">
-                ${dayHeaders.map(day => `<div class="week-day-header">${day}</div>`).join('')}
-            </div>
-            <div class="month-days-grid">
-                ${generateMonthDaysGrid(year, month)}
-            </div>
-        </div>
-    `;
-    
-    document.getElementById('selected-period').textContent = `${monthName}`;
-}
-
-function generateTimeSlots(tasks) {
-    let slotsHTML = '';
-    
-    // إنشاء فترات زمنية من 6 صباحاً إلى 10 مساءً
-    for (let hour = 6; hour <= 22; hour++) {
-        const hourStr = hour.toString().padStart(2, '0');
-        const timeLabel = `${hourStr}:00`;
-        
-        const tasksInHour = tasks.filter(task => {
-            if (!task.time) return false;
-            const [taskHour] = task.time.split(':');
-            return parseInt(taskHour) === hour;
-        });
-        
-        let tasksHTML = '';
-        tasksInHour.forEach(task => {
-            const color = getCategoryColor ? getCategoryColor(task.category) : '#4a90e2';
-            const statusClass = task.completed ? 'completed' : '';
-            const categoryName = getCategoryName ? getCategoryName(task.category) : task.category;
-            
-            tasksHTML += `
-                <div class="calendar-task ${statusClass}" style="border-right: 4px solid ${color};">
-                    <div class="task-time">${task.time || ''}</div>
-                    <div class="task-title">${task.title}</div>
+    let tasksHtml = '';
+    if (tasks.length === 0) {
+        tasksHtml = '<div class="empty-tasks">لا توجد مهام لهذا اليوم</div>';
+    } else {
+        tasks.forEach(task => {
+            const category = getCategoryById(task.categoryId) || { name: 'عام', color: '#6c757d' };
+            tasksHtml += `
+                <div class="calendar-task ${task.completed ? 'completed' : ''}" data-id="${task.id}">
+                    <div class="task-time">${task.time || 'طوال اليوم'}</div>
+                    <div class="task-details">
+                        <div class="task-title">${task.title}</div>
+                        <div class="task-category" style="color: ${category.color}">
+                            <i class="${category.icon || 'fas fa-tag'}"></i> ${category.name}
+                        </div>
+                    </div>
                     <div class="task-duration">${task.duration} دقيقة</div>
-                    <div class="task-category-badge" style="background: ${color}22; color: ${color};">${categoryName}</div>
                 </div>
             `;
         });
-        
-        slotsHTML += `
-            <div class="time-slot">
-                <div class="slot-time">${timeLabel}</div>
-                <div class="slot-tasks">
-                    ${tasksHTML || '<div class="no-tasks">لا توجد مهام</div>'}
-                </div>
-            </div>
-        `;
     }
     
-    return slotsHTML;
-}
-
-function generateWeekDays(startDate) {
-    let daysHTML = '';
-    const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-    
-    for (let i = 0; i < 7; i++) {
-        const dayDate = new Date(startDate);
-        dayDate.setDate(startDate.getDate() + i);
-        
-        const tasks = getTasksByDate ? getTasksByDate(dayDate) : [];
-        const dayStr = dayDate.getDate();
-        const monthStr = dayDate.toLocaleDateString('ar-SA', { month: 'short' });
-        const isToday = isSameDay(dayDate, new Date());
-        const dayName = dayNames[i];
-        
-        // حساب إجمالي وقت المهام لهذا اليوم
-        const totalTime = tasks.reduce((sum, task) => sum + task.duration, 0);
-        const hours = Math.floor(totalTime / 60);
-        const minutes = totalTime % 60;
-        const timeStr = hours > 0 ? `${hours}س ${minutes}د` : `${minutes}د`;
-        
-        daysHTML += `
-            <div class="week-day ${isToday ? 'today' : ''}">
-                <div class="day-header">
-                    <div class="day-name">${dayName}</div>
-                    <div class="day-date">${dayStr} ${monthStr}</div>
-                    <div class="day-time">${timeStr}</div>
-                </div>
+    return `
+        <div class="daily-view">
+            <div class="day-header">
+                <h3>${arabicDate}</h3>
                 <div class="day-tasks">
-                    ${tasks.map(task => {
-                        const color = getCategoryColor ? getCategoryColor(task.category) : '#4a90e2';
-                        return `
-                        <div class="week-task" style="background: ${color}22; border-right: 3px solid ${color};">
-                            <div class="task-time">${task.time || ''}</div>
-                            <div class="task-title">${task.title}</div>
-                            <div class="task-duration">${task.duration} د</div>
-                        </div>
-                    `}).join('')}
-                    ${tasks.length === 0 ? '<div class="no-tasks">لا توجد مهام</div>' : ''}
+                    ${tasksHtml}
                 </div>
             </div>
-        `;
-    }
-    
-    return daysHTML;
+        </div>
+    `;
 }
 
-function generateMonthDaysGrid(year, month) {
-    let daysHTML = '';
+// تحميل العرض الأسبوعي
+export function loadWeeklyView() {
+    const now = new Date();
+    const week = getCurrentWeek(now);
     
-    // أول يوم من الشهر
+    let weekHtml = '';
+    week.forEach(day => {
+        const dayTasks = getTasksByDate(day.date);
+        const isToday = day.date === now.toISOString().split('T')[0];
+        
+        let dayTasksHtml = '';
+        if (dayTasks.length === 0) {
+            dayTasksHtml = '<div class="empty-day">لا توجد مهام</div>';
+        } else {
+            dayTasks.forEach(task => {
+                dayTasksHtml += `
+                    <div class="week-task ${task.completed ? 'completed' : ''}">
+                        <div class="task-title">${task.title}</div>
+                        ${task.time ? `<div class="task-time">${task.time}</div>` : ''}
+                    </div>
+                `;
+            });
+        }
+        
+        weekHtml += `
+            <div class="day-cell ${isToday ? 'current-day' : ''}">
+                <div class="day-number">${day.day}</div>
+                <div class="day-name">${day.name}</div>
+                <div class="day-tasks">${dayTasksHtml}</div>
+            </div>
+        `;
+    });
+    
+    return `
+        <div class="weekly-view">
+            <div class="week-navigation">
+                <button class="nav-btn prev-week"><i class="fas fa-chevron-right"></i> الأسبوع السابق</button>
+                <span id="week-range">${week[0].date} - ${week[6].date}</span>
+                <button class="nav-btn next-week">الأسبوع التالي <i class="fas fa-chevron-left"></i></button>
+            </div>
+            <div class="week-calendar">
+                ${weekHtml}
+            </div>
+        </div>
+    `;
+}
+
+// تحميل العرض الشهري
+export function loadMonthlyView() {
+    const now = new Date();
+    const month = getCurrentMonth(now);
+    const monthName = now.toLocaleDateString('ar-SA', { month: 'long', year: 'numeric' });
+    
+    let monthHtml = '';
+    
+    // أسماء الأيام
+    const daysOfWeek = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+    daysOfWeek.forEach(day => {
+        monthHtml += `<div class="day-header-cell">${day}</div>`;
+    });
+    
+    month.forEach(day => {
+        if (day) {
+            const dayTasks = getTasksByDate(day.date);
+            const isToday = day.date === now.toISOString().split('T')[0];
+            const hasTasks = dayTasks.length > 0;
+            
+            monthHtml += `
+                <div class="day-cell ${isToday ? 'current-day' : ''} ${hasTasks ? 'has-tasks' : ''}">
+                    <div class="day-number">${day.day}</div>
+                    ${hasTasks ? `<div class="task-indicator" title="${dayTasks.length} مهام"></div>` : ''}
+                </div>
+            `;
+        } else {
+            monthHtml += '<div class="day-cell empty"></div>';
+        }
+    });
+    
+    return `
+        <div class="monthly-view">
+            <div class="month-navigation">
+                <button class="nav-btn prev-month"><i class="fas fa-chevron-right"></i> الشهر السابق</button>
+                <span id="current-month">${monthName}</span>
+                <button class="nav-btn next-month">الشهر التالي <i class="fas fa-chevron-left"></i></button>
+            </div>
+            <div class="month-calendar">
+                ${monthHtml}
+            </div>
+        </div>
+    `;
+}
+
+// الحصول على الأسبوع الحالي
+export function getCurrentWeek(date = new Date()) {
+    const currentDate = new Date(date);
+    const day = currentDate.getDay();
+    const diff = currentDate.getDate() - day + (day === 0 ? -6 : 1); // تعديل لجعل الإثنين أول يوم
+    
+    const week = [];
+    for (let i = 0; i < 7; i++) {
+        const dayDate = new Date(currentDate);
+        dayDate.setDate(diff + i);
+        
+        week.push({
+            date: dayDate.toISOString().split('T')[0],
+            day: dayDate.getDate(),
+            name: dayDate.toLocaleDateString('ar-SA', { weekday: 'short' }),
+            fullName: dayDate.toLocaleDateString('ar-SA', { weekday: 'long' })
+        });
+    }
+    
+    return week;
+}
+
+// الحصول على الشهر الحالي
+export function getCurrentMonth(date = new Date()) {
+    const year = date.getFullYear();
+    const month = date.getMonth();
     const firstDay = new Date(year, month, 1);
-    // آخر يوم من الشهر
     const lastDay = new Date(year, month + 1, 0);
-    // عدد الأيام في الشهر
-    const daysInMonth = lastDay.getDate();
-    // يوم الأسبوع لأول يوم
-    const firstDayIndex = firstDay.getDay();
     
-    // فراغات قبل أول يوم
-    for (let i = 0; i < firstDayIndex; i++) {
-        daysHTML += '<div class="month-day empty"></div>';
+    const monthDays = [];
+    
+    // أيام فارغة قبل بداية الشهر
+    for (let i = 0; i < firstDay.getDay(); i++) {
+        monthDays.push(null);
     }
     
     // أيام الشهر
-    for (let day = 1; day <= daysInMonth; day++) {
+    for (let day = 1; day <= lastDay.getDate(); day++) {
         const dayDate = new Date(year, month, day);
-        const tasks = getTasksByDate ? getTasksByDate(dayDate) : [];
-        const isToday = isSameDay(dayDate, new Date());
-        
-        daysHTML += `
-            <div class="month-day ${isToday ? 'today' : ''} ${tasks.length > 0 ? 'has-tasks' : ''}">
-                <div class="day-number">${day}</div>
-                ${tasks.length > 0 ? `
-                    <div class="day-tasks-indicator">
-                        ${tasks.slice(0, 3).map(task => {
-                            const color = getCategoryColor ? getCategoryColor(task.category) : '#4a90e2';
-                            return `<span class="task-indicator" style="background: ${color}"></span>`;
-                        }).join('')}
-                        ${tasks.length > 3 ? `<span class="more-indicator">+${tasks.length - 3}</span>` : ''}
-                    </div>
-                ` : ''}
-            </div>
-        `;
-    }
-    
-    return daysHTML;
-}
-
-function formatDate(date) {
-    return date.toLocaleDateString('ar-SA', {
-        day: 'numeric',
-        month: 'short'
-    });
-}
-
-function calculateTotalTime(tasks) {
-    const totalMinutes = tasks.reduce((sum, task) => sum + task.duration, 0);
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-    
-    if (hours > 0) {
-        return `${hours} ساعة ${minutes > 0 ? `${minutes} دقيقة` : ''}`.trim();
-    }
-    return `${minutes} دقيقة`;
-}
-
-function calculateCompletedTasks(tasks) {
-    return tasks.filter(task => task.completed).length;
-}
-
-function getWeekNumber(date) {
-    const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
-    const pastDaysOfYear = (date - firstDayOfYear) / 86400000;
-    return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
-}
-
-function isSameDay(date1, date2) {
-    return date1.getDate() === date2.getDate() &&
-           date1.getMonth() === date2.getMonth() &&
-           date1.getFullYear() === date2.getFullYear();
-}
-
-function changePeriod(period) {
-    currentPeriod = period;
-    document.querySelectorAll('.period-btn').forEach(btn => {
-        btn.classList.remove('active');
-        if (btn.dataset.period === period) {
-            btn.classList.add('active');
-        }
-    });
-    updateCalendar();
-}
-
-function navigatePeriod(direction) {
-    if (currentPeriod === 'day') {
-        currentDate.setDate(currentDate.getDate() + direction);
-    } else if (currentPeriod === 'week') {
-        currentDate.setDate(currentDate.getDate() + (direction * 7));
-    } else if (currentPeriod === 'month') {
-        currentDate.setMonth(currentDate.getMonth() + direction);
-    }
-    updateCalendar();
-}
-
-// تهيئة الجدول الزمني
-function initCalendar() {
-    console.log('تهيئة الجدول الزمني...');
-    
-    // أحداث أزرار الفترة
-    document.querySelectorAll('.period-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            changePeriod(btn.dataset.period);
+        monthDays.push({
+            date: dayDate.toISOString().split('T')[0],
+            day: day,
+            month: month + 1,
+            year: year
         });
-    });
+    }
     
-    // أحداث التنقل
-    document.getElementById('prev-period')?.addEventListener('click', () => {
-        navigatePeriod(-1);
-    });
-    
-    document.getElementById('next-period')?.addEventListener('click', () => {
-        navigatePeriod(1);
-    });
-    
-    // التهيئة الأولى
-    updateCalendar();
+    return monthDays;
 }
-
-// تعريف الدوال للنافذة العالمية
-window.updateCalendar = updateCalendar;
-window.initCalendar = initCalendar;
-window.isSameDay = isSameDay;
