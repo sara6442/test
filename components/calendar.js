@@ -291,3 +291,4 @@ function initCalendar() {
 // تعريف الدوال للنافذة العالمية
 window.updateCalendar = updateCalendar;
 window.initCalendar = initCalendar;
+window.isSameDay = isSameDay;
