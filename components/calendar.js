@@ -29,6 +29,10 @@ function renderDayCalendar() {
         day: 'numeric'
     });
     
+    // أيام الأسبوع
+    const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+    const todayIndex = currentDate.getDay();
+    
     container.innerHTML = `
         <div class="day-header">
             <h3>${dateStr}</h3>
@@ -38,12 +42,15 @@ function renderDayCalendar() {
                 <span>${calculateCompletedTasks(tasks)} مكتملة</span>
             </div>
         </div>
+        <div class="day-of-week">
+            <span class="week-day-name">${dayNames[todayIndex]}</span>
+        </div>
         <div class="time-slots">
             ${generateTimeSlots(tasks)}
         </div>
     `;
     
-    document.getElementById('selected-period').textContent = dateStr;
+    document.getElementById('selected-period').textContent = "اليوم";
 }
 
 function renderWeekCalendar() {
@@ -52,23 +59,19 @@ function renderWeekCalendar() {
     // حساب بداية الأسبوع
     const startOfWeek = new Date(currentDate);
     const day = startOfWeek.getDay();
-    const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1); // الأحد = 0
+    const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 0); // الأحد = 0
     startOfWeek.setDate(diff);
-    
-    // عنوان الأسبوع
-    const weekNumber = getWeekNumber(currentDate);
-    const year = currentDate.getFullYear();
     
     container.innerHTML = `
         <div class="week-header">
-            <h3>الأسبوع ${weekNumber} من عام ${year}</h3>
+            <h3>جدول الأسبوع</h3>
         </div>
-        <div class="week-grid">
+        <div class="week-days-container">
             ${generateWeekDays(startOfWeek)}
         </div>
     `;
     
-    document.getElementById('selected-period').textContent = `الأسبوع ${weekNumber}`;
+    document.getElementById('selected-period').textContent = "الأسبوع";
 }
 
 function renderMonthCalendar() {
@@ -87,7 +90,7 @@ function renderMonthCalendar() {
         </div>
     `;
     
-    document.getElementById('selected-period').textContent = `${monthName} ${year}`;
+    document.getElementById('selected-period').textContent = `${monthName}`;
 }
 
 function generateTimeSlots(tasks) {
@@ -113,6 +116,7 @@ function generateTimeSlots(tasks) {
                     <div class="task-time">${task.time || ''}</div>
                     <div class="task-title">${task.title}</div>
                     <div class="task-duration">${task.duration} دقيقة</div>
+                    <div class="task-category-badge" style="background: ${color}22; color: ${color};">${getCategoryName ? getCategoryName(task.category) : task.category}</div>
                 </div>
             `;
         });
@@ -132,31 +136,34 @@ function generateTimeSlots(tasks) {
 
 function generateWeekDays(startDate) {
     let daysHTML = '';
-    const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+    const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+    const monthNames = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
     
     for (let i = 0; i < 7; i++) {
         const dayDate = new Date(startDate);
         dayDate.setDate(startDate.getDate() + i);
         
         const tasks = getTasksByDate ? getTasksByDate(dayDate) : [];
-        const dayStr = dayDate.toLocaleDateString('ar-SA', {
-            day: 'numeric',
-            month: 'short'
-        });
+        const dayStr = dayDate.getDate();
+        const monthStr = monthNames[dayDate.getMonth()];
+        const isToday = isSameDay(dayDate, new Date());
         
         daysHTML += `
-            <div class="week-day">
+            <div class="week-day ${isToday ? 'today' : ''}">
                 <div class="day-header">
-                    <div class="day-name">${days[i]}</div>
-                    <div class="day-date">${dayStr}</div>
+                    <div class="day-name">${dayNames[i]}</div>
+                    <div class="day-date">${dayStr} ${monthStr}</div>
                 </div>
                 <div class="day-tasks">
-                    ${tasks.map(task => `
-                        <div class="week-task" style="background: ${getCategoryColor ? getCategoryColor(task.category) : '#4a90e2'}22; border-right: 3px solid ${getCategoryColor ? getCategoryColor(task.category) : '#4a90e2'};">
-                            <div class="task-title">${task.title}</div>
+                    ${tasks.map(task => {
+                        const color = getCategoryColor ? getCategoryColor(task.category) : '#4a90e2';
+                        return `
+                        <div class="week-task" style="background: ${color}22; border-right: 3px solid ${color};">
                             <div class="task-time">${task.time || ''}</div>
+                            <div class="task-title">${task.title}</div>
+                            <div class="task-duration">${task.duration} د</div>
                         </div>
-                    `).join('')}
+                    `}).join('')}
                     ${tasks.length === 0 ? '<div class="no-tasks">لا توجد مهام</div>' : ''}
                 </div>
             </div>
@@ -200,6 +207,12 @@ function generateMonthDays(year, month) {
                 <div class="day-number">${day}</div>
                 ${tasks.length > 0 ? `
                     <div class="day-tasks-count">${tasks.length} مهمة</div>
+                    <div class="day-tasks-preview">
+                        ${tasks.slice(0, 2).map(task => `
+                            <span class="task-dot" style="background: ${getCategoryColor ? getCategoryColor(task.category) : '#4a90e2'}"></span>
+                        `).join('')}
+                        ${tasks.length > 2 ? `<span class="more-tasks">+${tasks.length - 2}</span>` : ''}
+                    </div>
                 ` : ''}
             </div>
         `;
