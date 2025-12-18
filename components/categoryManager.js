@@ -401,6 +401,252 @@ function initCharts() {
     // تحديث Chart الفئة المحددة
     categoryManager.updateSelectedCategoryChart();
 }
+// إدارة الفئات (إضافة في class CategoryManager)
+loadCategoriesView() {
+    const container = document.querySelector('.categories-list');
+    if (!container) return;
+    
+    let html = '';
+    Object.keys(this.categories).forEach(categoryId => {
+        const category = this.categories[categoryId];
+        const usedMinutes = this.calculateUsedTime(categoryId);
+        const percentage = this.getPercentage(categoryId);
+        const taskCount = getTasksByCategory ? getTasksByCategory(categoryId).length : 0;
+        
+        html += `
+            <div class="category-card" data-category="${categoryId}">
+                <div class="category-header">
+                    <div class="category-color" style="background: ${category.color};"></div>
+                    <h4>${category.name}</h4>
+                    <span class="category-status ${category.enabled ? 'enabled' : 'disabled'}">
+                        ${category.enabled ? 'مفعلة' : 'معطلة'}
+                    </span>
+                </div>
+                
+                <div class="category-stats">
+                    <div class="stat">
+                        <span class="label">السعة:</span>
+                        <span class="value">${this.formatTime(category.totalMinutes)}</span>
+                    </div>
+                    <div class="stat">
+                        <span class="label">المستخدم:</span>
+                        <span class="value">${this.formatTime(usedMinutes)}</span>
+                    </div>
+                    <div class="stat">
+                        <span class="label">المهام:</span>
+                        <span class="value">${taskCount}</span>
+                    </div>
+                </div>
+                
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: ${percentage}%; background: ${category.color};"></div>
+                    <span class="progress-text">${percentage}%</span>
+                </div>
+                
+                <div class="category-actions">
+                    <button class="btn-edit" data-category="${categoryId}">
+                        <i class="fas fa-edit"></i> تعديل
+                    </button>
+                    <button class="btn-view-tasks" data-category="${categoryId}">
+                        <i class="fas fa-tasks"></i> المهام
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+    
+    // تحديث الملخص
+    this.updateCategoriesSummary();
+    
+    // إضافة الأحداث
+    this.attachCategoriesEvents();
+}
+
+updateCategoriesSummary() {
+    const totalCategories = Object.keys(this.categories).length;
+    let totalCapacity = 0;
+    let totalUsed = 0;
+    
+    Object.keys(this.categories).forEach(categoryId => {
+        const category = this.categories[categoryId];
+        const usedMinutes = this.calculateUsedTime(categoryId);
+        
+        totalCapacity += category.totalMinutes;
+        totalUsed += usedMinutes;
+    });
+    
+    document.getElementById('total-categories').textContent = totalCategories;
+    document.getElementById('total-capacity').textContent = this.formatTime(totalCapacity);
+    document.getElementById('total-used').textContent = this.formatTime(totalUsed);
+    document.getElementById('total-remaining').textContent = this.formatTime(totalCapacity - totalUsed);
+}
+
+attachCategoriesEvents() {
+    // أحداث أزرار التعديل
+    document.querySelectorAll('.btn-edit').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const categoryId = e.currentTarget.dataset.category;
+            this.openCategoryModal(categoryId, 'edit');
+        });
+    });
+    
+    // أحداث عرض المهام
+    document.querySelectorAll('.btn-view-tasks').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const categoryId = e.currentTarget.dataset.category;
+            this.selectCategory(categoryId);
+            // الانتقال لعرض المهام
+            document.querySelector('.nav-menu li[data-view="tasks"]').click();
+        });
+    });
+}
+
+openCategoryModal(categoryId = null, mode = 'add') {
+    const modal = document.getElementById('category-modal');
+    const title = document.getElementById('category-modal-title');
+    const form = document.getElementById('category-form');
+    const deleteBtn = document.getElementById('delete-category');
+    
+    if (mode === 'add') {
+        title.textContent = 'إضافة فئة جديدة';
+        form.reset();
+        document.getElementById('category-color').value = this.generateRandomColor();
+        document.getElementById('category-enabled').checked = true;
+        document.getElementById('category-id').value = '';
+        deleteBtn.style.display = 'none';
+    } else {
+        const category = this.getCategory(categoryId);
+        if (!category) return;
+        
+        title.textContent = 'تعديل الفئة';
+        document.getElementById('category-name').value = category.name;
+        document.getElementById('category-color').value = category.color;
+        document.getElementById('category-hours').value = category.totalMinutes / 60;
+        document.getElementById('capacity-value').textContent = `${category.totalMinutes / 60} ساعة`;
+        document.getElementById('category-enabled').checked = category.enabled;
+        document.getElementById('category-id').value = categoryId;
+        deleteBtn.style.display = 'block';
+    }
+    
+    modal.style.display = 'flex';
+}
+
+generateRandomColor() {
+    const colors = ['#4a90e2', '#7b68ee', '#2ecc71', '#e74c3c', '#f39c12', '#9b59b6', '#1abc9c', '#34495e'];
+    return colors[Math.floor(Math.random() * colors.length)];
+}
+
+// إضافة CSS للفئات
+// أضف في style.css:
+.category-card {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.category-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.category-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    margin-left: 10px;
+}
+
+.category-status {
+    padding: 3px 10px;
+    border-radius: 15px;
+    font-size: 12px;
+    margin-right: auto;
+}
+
+.category-status.enabled {
+    background: #d4edda;
+    color: #155724;
+}
+
+.category-status.disabled {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.progress-bar {
+    height: 10px;
+    background: #e9ecef;
+    border-radius: 5px;
+    margin: 15px 0;
+    position: relative;
+}
+
+.progress-fill {
+    height: 100%;
+    border-radius: 5px;
+    transition: width 0.3s;
+}
+
+.progress-text {
+    position: absolute;
+    top: -20px;
+    left: 0;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.category-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.btn-edit, .btn-view-tasks {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.btn-edit {
+    background: #4a90e2;
+    color: white;
+}
+
+.btn-view-tasks {
+    background: #f8f9fa;
+    color: #495057;
+}
+
+.capacity-input {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.capacity-input input[type="range"] {
+    flex: 1;
+}
+
+.btn-danger {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.btn-danger:hover {
+    background: #c0392b;
+}
 
 // تعريف الدوال للنافذة العالمية
 window.categoryManager = categoryManager;
