@@ -54,6 +54,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 case 'charts':
                     if (typeof initCharts === 'function') initCharts();
                     break;
+                case 'categories':
+                    if (typeof categoryManager.loadCategoriesView === 'function') {
+                        categoryManager.loadCategoriesView();
+                    }
+                    break;
             }
         });
     });
@@ -71,7 +76,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 taskModal.style.display = 'flex';
                 // إعادة تعيين النموذج
                 taskForm.reset();
-                document.getElementById('task-category').value = 'personal';
+                document.getElementById('task-duration').value = '30';
+                document.getElementById('task-repeat').value = 'none';
             }
         });
     }
@@ -91,11 +97,83 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    // إدارة نافذة الفئات
+    const categoryModal = document.getElementById('category-modal');
+    const addCategoryBtn = document.getElementById('add-category-btn');
+    const categoryForm = document.getElementById('category-form');
+    
+    if (addCategoryBtn) {
+        addCategoryBtn.addEventListener('click', () => {
+            categoryManager.openCategoryModal(null, 'add');
+        });
+    }
+    
+    // أحداث تعديل سعة الفئة
+    document.getElementById('category-hours')?.addEventListener('input', function() {
+        const value = parseFloat(this.value);
+        document.getElementById('capacity-value').textContent = `${value} ساعة`;
+    });
+    
+    // حدث حذف الفئة
+    document.getElementById('delete-category')?.addEventListener('click', function() {
+        const categoryId = document.getElementById('category-id').value;
+        if (categoryId && confirm('هل أنت متأكد من حذف هذه الفئة؟ سيتم حذف جميع المهام المرتبطة بها.')) {
+            // حذف الفئة
+            delete categoryManager.categories[categoryId];
+            categoryManager.saveCategories();
+            
+            // حذف المهام المرتبطة
+            const tasks = getAllTasks ? getAllTasks() : [];
+            const updatedTasks = tasks.filter(task => task.category !== categoryId);
+            localStorage.setItem('tasks', JSON.stringify(updatedTasks));
+            
+            // إغلاق النافذة وتحديث الواجهة
+            categoryModal.style.display = 'none';
+            categoryManager.loadCategoriesView();
+            if (typeof loadTasks === 'function') loadTasks();
+            if (typeof updateCalendar === 'function') updateCalendar();
+        }
+    });
+    
+    // حدث حفظ الفئة
+    if (categoryForm) {
+        categoryForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const categoryId = document.getElementById('category-id').value || 
+                              'category_' + Date.now();
+            const name = document.getElementById('category-name').value.trim();
+            const color = document.getElementById('category-color').value;
+            const hours = parseFloat(document.getElementById('category-hours').value);
+            const enabled = document.getElementById('category-enabled').checked;
+            
+            if (!name) {
+                alert('⚠️ الرجاء إدخال اسم الفئة');
+                return;
+            }
+            
+            categoryManager.updateCategory(categoryId, {
+                name,
+                color,
+                totalMinutes: hours * 60,
+                enabled
+            });
+            
+            categoryModal.style.display = 'none';
+            categoryManager.loadCategoriesView();
+            
+            alert('✅ تم حفظ الفئة بنجاح!');
+        });
+    }
+    
     // إغلاق النافذة عند النقر خارجها
     window.addEventListener('click', (e) => {
         if (e.target === taskModal) closeTaskModal();
         if (e.target === document.getElementById('chart-settings-modal')) {
             document.getElementById('chart-settings-modal').style.display = 'none';
+        }
+        if (e.target === categoryModal) {
+            categoryModal.style.display = 'none';
         }
     });
     
@@ -135,7 +213,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const category = categoryManager.getCategory(taskData.category);
                     const remaining = categoryManager.getRemainingTime(taskData.category);
                     
-                    alert(`❌ لا يمكن إضافة هذه المهمة!\nالمدة المطلوبة: ${taskData.duration} دقيقة\nالوقت المتبقي في الفئة: ${remaining} دقيقة`);
+                    alert(`❌ لا يمكن إضافة هذه المهمة!\nالمدة المطلوبة: ${taskData.duration} دقيقة\nالوقت المتبقي في الفئة: ${remaining} دقيقة\nسعة الفئة: ${category.totalMinutes} دقيقة`);
                     return;
                 }
             }
@@ -171,82 +249,7 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('✅ تمت إضافة المهمة بنجاح!');
         });
     }
-    // إدارة الفئات في script.js
-const categoryModal = document.getElementById('category-modal');
-const addCategoryBtn = document.getElementById('add-category-btn');
-const categoryForm = document.getElementById('category-form');
-
-if (addCategoryBtn) {
-    addCategoryBtn.addEventListener('click', () => {
-        categoryManager.openCategoryModal(null, 'add');
-    });
-}
-
-// أحداث تعديل سعة الفئة
-document.getElementById('category-hours')?.addEventListener('input', function() {
-    const value = parseFloat(this.value);
-    document.getElementById('capacity-value').textContent = `${value} ساعة`;
-});
-
-// حدث حذف الفئة
-document.getElementById('delete-category')?.addEventListener('click', function() {
-    const categoryId = document.getElementById('category-id').value;
-    if (categoryId && confirm('هل أنت متأكد من حذف هذه الفئة؟ سيتم حذف جميع المهام المرتبطة بها.')) {
-        // حذف الفئة
-        delete categoryManager.categories[categoryId];
-        categoryManager.saveCategories();
-        
-        // حذف المهام المرتبطة
-        const tasks = getAllTasks ? getAllTasks() : [];
-        const updatedTasks = tasks.filter(task => task.category !== categoryId);
-        localStorage.setItem('tasks', JSON.stringify(updatedTasks));
-        
-        // إغلاق النافذة وتحديث الواجهة
-        categoryModal.style.display = 'none';
-        categoryManager.loadCategoriesView();
-        if (typeof loadTasks === 'function') loadTasks();
-        if (typeof updateCalendar === 'function') updateCalendar();
-    }
-});
-
-// حدث حفظ الفئة
-if (categoryForm) {
-    categoryForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const categoryId = document.getElementById('category-id').value || 
-                          'category_' + Date.now();
-        const name = document.getElementById('category-name').value.trim();
-        const color = document.getElementById('category-color').value;
-        const hours = parseFloat(document.getElementById('category-hours').value);
-        const enabled = document.getElementById('category-enabled').checked;
-        
-        if (!name) {
-            alert('⚠️ الرجاء إدخال اسم الفئة');
-            return;
-        }
-        
-        categoryManager.updateCategory(categoryId, {
-            name,
-            color,
-            totalMinutes: hours * 60,
-            enabled
-        });
-        
-        categoryModal.style.display = 'none';
-        categoryManager.loadCategoriesView();
-        
-        alert('✅ تم حفظ الفئة بنجاح!');
-    });
-}
-
-// تحديث التبديل بين العروض
-// أضف في views.forEach:
-case 'categories':
-    if (typeof categoryManager.loadCategoriesView === 'function') {
-        categoryManager.loadCategoriesView();
-    }
-    break;
+    
     // تهيئة إعدادات Charts
     document.getElementById('settings-toggle')?.addEventListener('click', function() {
         const modal = document.getElementById('chart-settings-modal');
