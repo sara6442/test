@@ -1,11 +1,59 @@
-// ... في بداية الملف، بعد تعريف tasks ...
+// إدارة المهام
+let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
 
-// تعديل دالة getTasksByCategory لاستخدام categoryManager
+function saveTask(task) {
+    tasks.push(task);
+    localStorage.setItem('tasks', JSON.stringify(tasks));
+    return task;
+}
+
+function updateTask(id, updates) {
+    const index = tasks.findIndex(task => task.id === id);
+    if (index !== -1) {
+        tasks[index] = { ...tasks[index], ...updates };
+        localStorage.setItem('tasks', JSON.stringify(tasks));
+        return tasks[index];
+    }
+    return null;
+}
+
+function deleteTask(id) {
+    tasks = tasks.filter(task => task.id !== id);
+    localStorage.setItem('tasks', JSON.stringify(tasks));
+}
+
+function getTasksByDate(date = new Date()) {
+    const dateStr = date.toDateString();
+    return tasks.filter(task => {
+        const taskDate = new Date(task.createdAt).toDateString();
+        return taskDate === dateStr;
+    });
+}
+
 function getTasksByCategory(category) {
     return tasks.filter(task => task.category === category);
 }
 
-// تعديل دالة loadTasks لإضافة فحص الحدود
+function getCategoryName(category) {
+    const categories = {
+        'personal': 'مهام شخصية',
+        'work': 'عمل',
+        'study': 'دراسة',
+        'health': 'صحة'
+    };
+    return categories[category] || category;
+}
+
+function getRepeatName(repeat) {
+    const repeats = {
+        'none': 'لا يوجد',
+        'daily': 'يومياً',
+        'weekly': 'أسبوعياً',
+        'weekdays': 'أيام الأسبوع'
+    };
+    return repeats[repeat] || repeat;
+}
+
 function loadTasks() {
     const container = document.getElementById('tasks-container');
     const todayTasks = getTasksByDate();
@@ -18,8 +66,7 @@ function loadTasks() {
     }
     
     todayTasks.forEach(task => {
-        const category = categoryManager.getCategory(task.category);
-        const categoryColor = category ? category.color : '#6c757d';
+        const categoryColor = '#4a90e2'; // لون افتراضي
         
         const taskElement = document.createElement('div');
         taskElement.className = `task-item ${task.completed ? 'completed' : ''}`;
@@ -35,8 +82,6 @@ function loadTasks() {
                     <span><i class="far fa-clock"></i> ${task.duration} دقيقة</span>
                     ${task.time ? `<span><i class="far fa-clock"></i> ${task.time}</span>` : ''}
                     ${task.repeat !== 'none' ? `<span><i class="fas fa-redo"></i> ${getRepeatName(task.repeat)}</span>` : ''}
-                    ${category && categoryManager.getPercentage(task.category) >= 100 ? 
-                      '<span class="category-full"><i class="fas fa-exclamation-triangle"></i> ممتلئة</span>' : ''}
                 </div>
             </div>
             <div class="task-actions">
@@ -57,4 +102,26 @@ function loadTasks() {
     document.getElementById('total-count').textContent = `${todayTasks.length} إجمالي`;
 }
 
-// ... بقية الدوال تبقى كما هي ...
+function toggleTaskComplete(id) {
+    const task = tasks.find(t => t.id === id);
+    if (task) {
+        updateTask(id, { completed: !task.completed });
+        loadTasks();
+        if (typeof updateAllCharts === 'function') {
+            updateAllCharts();
+        }
+    }
+}
+
+function initApp() {
+    loadTasks();
+}
+
+// تعريف الدوال للنافذة العالمية
+window.saveTask = saveTask;
+window.updateTask = updateTask;
+window.deleteTask = deleteTask;
+window.loadTasks = loadTasks;
+window.toggleTaskComplete = toggleTaskComplete;
+window.initApp = initApp;
+window.getTasksByCategory = getTasksByCategory;
