@@ -1,324 +1,107 @@
-// إدارة المهام
+// تخزين المهام
 let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
 
-function saveTask(task) {
-    // التحقق من السعة قبل الإضافة
-    if (typeof categoryManager !== 'undefined') {
-        if (!categoryManager.canAddTask(task.category, task.duration)) {
-            const category = categoryManager.getCategory(task.category);
-            const remaining = categoryManager.getRemainingTime(task.category);
-            
-            alert(`❌ لا يمكن إضافة هذه المهمة!\nالمدة المطلوبة: ${task.duration} دقيقة\nالوقت المتبقي في الفئة: ${remaining} دقيقة\nسعة الفئة: ${category.totalMinutes} دقيقة`);
-            return null;
-        }
-    }
-    
-    // تعيين تاريخ الإنشاء إذا لم يكن موجوداً
-    if (!task.createdAt) {
-        task.createdAt = new Date().toISOString();
-    }
-    
+// وظائف إدارة المهام
+export function addTask(task) {
     tasks.push(task);
-    localStorage.setItem('tasks', JSON.stringify(tasks));
-    console.log('تم حفظ المهمة:', task);
-    
-    // تحديث وقت الفئة المستخدم
-    if (typeof categoryManager !== 'undefined') {
-        categoryManager.calculateUsedTime(task.category);
-    }
-    
-    return task;
+    saveToLocalStorage();
 }
 
-function updateTask(id, updates) {
-    const index = tasks.findIndex(task => task.id === id);
+export function deleteTask(taskId) {
+    tasks = tasks.filter(task => task.id !== taskId);
+    saveToLocalStorage();
+}
+
+export function updateTask(taskId, updatedTask) {
+    const index = tasks.findIndex(task => task.id === taskId);
     if (index !== -1) {
-        const oldCategory = tasks[index].category;
-        const newCategory = updates.category || oldCategory;
-        const oldDuration = tasks[index].duration;
-        const newDuration = updates.duration || oldDuration;
-        
-        // تحديث المهمة
-        tasks[index] = { ...tasks[index], ...updates };
-        localStorage.setItem('tasks', JSON.stringify(tasks));
-        console.log('تم تحديث المهمة:', tasks[index]);
-        
-        // تحديث أوقات الفئات إذا تغيرت المدة أو الفئة
-        if (typeof categoryManager !== 'undefined') {
-            if (oldCategory !== newCategory || oldDuration !== newDuration) {
-                categoryManager.calculateUsedTime(oldCategory);
-                if (oldCategory !== newCategory) {
-                    categoryManager.calculateUsedTime(newCategory);
-                }
-            }
-        }
-        
-        return tasks[index];
-    }
-    return null;
-}
-
-function deleteTask(id) {
-    const taskIndex = tasks.findIndex(task => task.id === id);
-    if (taskIndex !== -1) {
-        const deletedTask = tasks[taskIndex];
-        const taskCategory = deletedTask.category;
-        
-        tasks = tasks.filter(task => task.id !== id);
-        localStorage.setItem('tasks', JSON.stringify(tasks));
-        console.log('تم حذف المهمة:', deletedTask);
-        
-        // تحديث وقت الفئة المستخدم
-        if (typeof categoryManager !== 'undefined') {
-            categoryManager.calculateUsedTime(taskCategory);
-        }
-        
-        return true;
-    }
-    return false;
-}
-
-function getTasksByDate(date = new Date()) {
-    const dateStr = date.toDateString();
-    return tasks.filter(task => {
-        const taskDate = new Date(task.createdAt).toDateString();
-        return taskDate === dateStr;
-    });
-}
-
-function getTasksByCategory(category) {
-    return tasks.filter(task => task.category === category);
-}
-
-function getAllTasks() {
-    return tasks;
-}
-
-function getCategoryName(category) {
-    if (typeof categoryManager !== 'undefined') {
-        const cat = categoryManager.getCategory(category);
-        return cat ? cat.name : category;
-    }
-    
-    const categories = {
-        'personal': 'مهام شخصية',
-        'work': 'عمل',
-        'study': 'دراسة',
-        'health': 'صحة'
-    };
-    return categories[category] || category;
-}
-
-function getCategoryColor(category) {
-    if (typeof categoryManager !== 'undefined') {
-        const cat = categoryManager.getCategory(category);
-        return cat ? cat.color : '#6c757d';
-    }
-    
-    const colors = {
-        'personal': '#4a90e2',
-        'work': '#7b68ee',
-        'study': '#2ecc71',
-        'health': '#e74c3c'
-    };
-    return colors[category] || '#6c757d';
-}
-
-function getRepeatName(repeat) {
-    const repeats = {
-        'none': 'لا يوجد',
-        'daily': 'يومياً',
-        'weekly': 'أسبوعياً',
-        'monthly': 'شهرياً'
-    };
-    return repeats[repeat] || repeat;
-}
-
-function loadTasks() {
-    const container = document.getElementById('tasks-container');
-    if (!container) return;
-    
-    const todayTasks = getTasksByDate();
-    
-    container.innerHTML = '';
-    
-    if (todayTasks.length === 0) {
-        container.innerHTML = `
-            <div class="no-tasks">
-                <i class="fas fa-tasks fa-3x"></i>
-                <h3>لا توجد مهام لهذا اليوم</h3>
-                <p>ابدأ بإضافة مهمة جديدة</p>
-            </div>
-        `;
-        updateTaskStats();
-        return;
-    }
-    
-    // تحديث خيارات الفئات في نموذج إضافة المهمة
-    updateTaskCategoryOptions();
-    
-    todayTasks.forEach(task => {
-        const categoryColor = getCategoryColor(task.category);
-        
-        const taskElement = document.createElement('div');
-        taskElement.className = `task-item ${task.completed ? 'completed' : ''}`;
-        taskElement.style.borderRightColor = categoryColor;
-        taskElement.dataset.id = task.id;
-        
-        taskElement.innerHTML = `
-            <div class="task-info">
-                <div class="task-title">${task.title}</div>
-                ${task.description ? `<div class="task-description">${task.description}</div>` : ''}
-                <div class="task-meta">
-                    <span class="task-category" style="background: ${categoryColor}22; color: ${categoryColor}; border: 1px solid ${categoryColor}44;">
-                        ${getCategoryName(task.category)}
-                    </span>
-                    <span><i class="far fa-clock"></i> ${task.duration} دقيقة</span>
-                    ${task.time ? `<span><i class="fas fa-clock"></i> ${task.time}</span>` : ''}
-                    ${task.repeat !== 'none' ? `<span><i class="fas fa-redo"></i> ${getRepeatName(task.repeat)}</span>` : ''}
-                </div>
-            </div>
-            <div class="task-actions">
-                <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} 
-                       data-id="${task.id}">
-                <button class="btn-delete" data-id="${task.id}">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </div>
-        `;
-        
-        container.appendChild(taskElement);
-    });
-    
-    // إضافة أحداث للمهام الجديدة
-    attachTaskEvents();
-    updateTaskStats();
-}
-
-function updateTaskCategoryOptions() {
-    const categorySelect = document.getElementById('task-category');
-    if (!categorySelect) return;
-    
-    // مسح الخيارات القديمة
-    categorySelect.innerHTML = '';
-    
-    // إضافة خيارات الفئات من categoryManager
-    if (typeof categoryManager !== 'undefined') {
-        const categories = categoryManager.getAllCategories();
-        Object.keys(categories).forEach(categoryId => {
-            const category = categories[categoryId];
-            if (category.enabled) {
-                const option = document.createElement('option');
-                option.value = categoryId;
-                option.textContent = category.name;
-                categorySelect.appendChild(option);
-            }
-        });
-    } else {
-        // خيارات افتراضية
-        const defaultOptions = [
-            { value: 'personal', name: 'مهام شخصية' },
-            { value: 'work', name: 'عمل' },
-            { value: 'study', name: 'دراسة' },
-            { value: 'health', name: 'صحة' }
-        ];
-        
-        defaultOptions.forEach(opt => {
-            const option = document.createElement('option');
-            option.value = opt.value;
-            option.textContent = opt.name;
-            categorySelect.appendChild(option);
-        });
+        tasks[index] = { ...tasks[index], ...updatedTask };
+        saveToLocalStorage();
     }
 }
 
-function attachTaskEvents() {
-    // أحداث التبديل
-    document.querySelectorAll('.task-checkbox').forEach(checkbox => {
-        checkbox.addEventListener('click', function(e) {
-            e.stopPropagation();
-            const taskId = parseInt(this.dataset.id);
-            toggleTaskComplete(taskId);
-        });
-    });
-    
-    // أحداث الحذف
-    document.querySelectorAll('.btn-delete').forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.stopPropagation();
-            const taskId = parseInt(this.dataset.id);
-            if (confirm('هل أنت متأكد من حذف هذه المهمة؟')) {
-                deleteTask(taskId);
-                loadTasks();
-                if (typeof updateAllCharts === 'function') {
-                    updateAllCharts();
-                }
-                if (typeof updateCalendar === 'function') {
-                    updateCalendar();
-                }
-                if (typeof updateDailyChart === 'function') {
-                    updateDailyChart();
-                }
-            }
-        });
-    });
-    
-    // أحداث النقر على المهمة (للتوسيع)
-    document.querySelectorAll('.task-item').forEach(item => {
-        item.addEventListener('click', function() {
-            this.classList.toggle('expanded');
-        });
-    });
+export function getTasks() {
+    return [...tasks];
 }
 
-function toggleTaskComplete(id) {
-    const task = tasks.find(t => t.id === id);
+export function getTaskById(taskId) {
+    return tasks.find(task => task.id === taskId);
+}
+
+export function getTasksByDate(date) {
+    return tasks.filter(task => task.date === date);
+}
+
+export function getTasksByCategory(categoryId) {
+    return tasks.filter(task => task.categoryId === categoryId);
+}
+
+export function toggleTaskCompletion(taskId) {
+    const task = getTaskById(taskId);
     if (task) {
-        updateTask(id, { completed: !task.completed });
-        loadTasks();
-        if (typeof updateAllCharts === 'function') {
-            updateAllCharts();
-        }
-        if (typeof updateCalendar === 'function') {
-            updateCalendar();
-        }
-        if (typeof updateDailyChart === 'function') {
-            updateDailyChart();
-        }
+        task.completed = !task.completed;
+        updateTask(taskId, task);
     }
 }
 
-function updateTaskStats() {
-    const todayTasks = getTasksByDate();
-    const completedCount = todayTasks.filter(t => t.completed).length;
-    const totalCount = todayTasks.length;
+export function getTasksByTimeRange(range) {
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
     
-    const completedElement = document.getElementById('completed-count');
-    const totalElement = document.getElementById('total-count');
-    
-    if (completedElement) completedElement.textContent = `${completedCount} مكتملة`;
-    if (totalElement) totalElement.textContent = `${totalCount} إجمالي`;
+    switch(range) {
+        case 'daily':
+            return getTasksByDate(today);
+        case 'weekly':
+            const weekAgo = new Date(now.setDate(now.getDate() - 7));
+            return tasks.filter(task => {
+                const taskDate = new Date(task.date || task.createdAt);
+                return taskDate >= weekAgo;
+            });
+        case 'monthly':
+            const monthAgo = new Date(now.setMonth(now.getMonth() - 1));
+            return tasks.filter(task => {
+                const taskDate = new Date(task.date || task.createdAt);
+                return taskDate >= monthAgo;
+            });
+        default:
+            return tasks;
+    }
 }
 
-function initApp() {
-    console.log('تهيئة تطبيق المهام...');
-    
-    // تحديث خيارات الفئات
-    updateTaskCategoryOptions();
-    
-    // تحميل المهام
-    loadTasks();
+// حفظ في التخزين المحلي
+function saveToLocalStorage() {
+    localStorage.setItem('tasks', JSON.stringify(tasks));
 }
 
-// تعريف الدوال للنافذة العالمية
-window.saveTask = saveTask;
-window.updateTask = updateTask;
-window.deleteTask = deleteTask;
-window.loadTasks = loadTasks;
-window.toggleTaskComplete = toggleTaskComplete;
-window.initApp = initApp;
-window.getTasksByCategory = getTasksByCategory;
-window.getAllTasks = getAllTasks;
-window.getCategoryColor = getCategoryColor;
-window.getTasksByDate = getTasksByDate;
-window.getCategoryName = getCategoryName;
+// تهيئة بعض المهام التجريبية
+if (tasks.length === 0) {
+    const sampleTasks = [
+        {
+            id: '1',
+            title: 'تسليم تقرير العمل',
+            description: 'تسليم التقرير النهائي للمشروع',
+            categoryId: 'work',
+            duration: 60,
+            date: new Date().toISOString().split('T')[0],
+            time: '14:00',
+            repeat: 'none',
+            completed: false,
+            createdAt: new Date().toISOString()
+        },
+        {
+            id: '2',
+            title: 'شراء مستلزمات المنزل',
+            description: 'شراء الخضار والفواكه',
+            categoryId: 'personal',
+            duration: 45,
+            date: new Date().toISOString().split('T')[0],
+            time: '18:00',
+            repeat: 'weekly',
+            completed: true,
+            createdAt: new Date().toISOString()
+        }
+    ];
+    
+    tasks = sampleTasks;
+    saveToLocalStorage();
+}
