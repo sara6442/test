@@ -12,28 +12,28 @@ class CategoryManager {
             personal: {
                 name: 'المهام الشخصية',
                 color: '#4a90e2',
-                totalMinutes: 120,
+                totalMinutes: 120, // ساعتان
                 enabled: true,
                 usedMinutes: 0
             },
             work: {
                 name: 'العمل',
                 color: '#7b68ee',
-                totalMinutes: 480,
+                totalMinutes: 480, // 8 ساعات
                 enabled: true,
                 usedMinutes: 0
             },
             study: {
                 name: 'الدراسة',
                 color: '#2ecc71',
-                totalMinutes: 180,
+                totalMinutes: 180, // 3 ساعات
                 enabled: true,
                 usedMinutes: 0
             },
             health: {
                 name: 'الصحة',
                 color: '#e74c3c',
-                totalMinutes: 60,
+                totalMinutes: 60, // ساعة واحدة
                 enabled: true,
                 usedMinutes: 0
             }
@@ -48,6 +48,15 @@ class CategoryManager {
         if (this.categories[categoryId]) {
             this.categories[categoryId] = { ...this.categories[categoryId], ...updates };
             this.saveCategories();
+            
+            // تحديث الواجهة إذا لزم الأمر
+            if (updates.enabled !== undefined || updates.name !== undefined || updates.color !== undefined) {
+                this.updateMiniCategories();
+                if (typeof updateTaskCategoryOptions === 'function') {
+                    updateTaskCategoryOptions();
+                }
+            }
+            
             return true;
         }
         return false;
@@ -61,12 +70,21 @@ class CategoryManager {
         return this.categories;
     }
     
+    getEnabledCategories() {
+        return Object.keys(this.categories)
+            .filter(catId => this.categories[catId].enabled)
+            .reduce((obj, catId) => {
+                obj[catId] = this.categories[catId];
+                return obj;
+            }, {});
+    }
+    
     getSelectedCategory() {
         return this.selectedCategory;
     }
     
     setSelectedCategory(categoryId) {
-        if (this.categories[categoryId]) {
+        if (this.categories[categoryId] && this.categories[categoryId].enabled) {
             this.selectedCategory = categoryId;
             return true;
         }
@@ -75,8 +93,15 @@ class CategoryManager {
     
     calculateUsedTime(categoryId) {
         const categoryTasks = getTasksByCategory ? getTasksByCategory(categoryId) : [];
+        const today = new Date().toDateString();
+        
+        // حساب المهام المكتملة لهذا اليوم فقط
         const totalMinutes = categoryTasks.reduce((sum, task) => {
-            return sum + (task.completed ? task.duration : 0);
+            const taskDate = new Date(task.createdAt).toDateString();
+            if (taskDate === today && task.completed) {
+                return sum + task.duration;
+            }
+            return sum;
         }, 0);
         
         this.updateCategory(categoryId, { usedMinutes: totalMinutes });
@@ -95,7 +120,7 @@ class CategoryManager {
         const category = this.getCategory(categoryId);
         if (!category || category.totalMinutes === 0) return 0;
         
-        return Math.round((category.usedMinutes / category.totalMinutes) * 100);
+        return Math.min(100, Math.round((category.usedMinutes / category.totalMinutes) * 100));
     }
     
     canAddTask(categoryId, duration) {
@@ -135,12 +160,7 @@ class CategoryManager {
         // تأخير تهيئة الأحداث حتى يتم تحميل الصفحة بالكامل
         setTimeout(() => {
             // أحداث الفئات المصغرة
-            document.querySelectorAll('.mini-category').forEach(miniCat => {
-                miniCat.addEventListener('click', (e) => {
-                    const categoryId = e.currentTarget.dataset.category;
-                    this.selectCategory(categoryId);
-                });
-            });
+            this.updateMiniCategories();
             
             // حدث زر الإعدادات
             document.getElementById('category-settings-btn')?.addEventListener('click', () => {
@@ -168,6 +188,36 @@ class CategoryManager {
                 this.loadSettings(e.target.value);
             });
         }, 100);
+    }
+    
+    updateMiniCategories() {
+        const container = document.querySelector('.mini-categories-list');
+        if (!container) return;
+        
+        let html = '';
+        const enabledCategories = this.getEnabledCategories();
+        
+        Object.keys(enabledCategories).forEach(categoryId => {
+            const category = enabledCategories[categoryId];
+            const isActive = this.selectedCategory === categoryId;
+            
+            html += `
+                <div class="mini-category ${isActive ? 'active' : ''}" data-category="${categoryId}">
+                    <div class="mini-color" style="background: ${category.color};"></div>
+                    <span class="mini-name">${category.name}</span>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+        
+        // إعادة إضافة الأحداث
+        document.querySelectorAll('.mini-category').forEach(miniCat => {
+            miniCat.addEventListener('click', (e) => {
+                const categoryId = e.currentTarget.dataset.category;
+                this.selectCategory(categoryId);
+            });
+        });
     }
     
     selectCategory(categoryId) {
@@ -226,7 +276,17 @@ class CategoryManager {
                 maintainAspectRatio: false,
                 plugins: {
                     legend: { display: false },
-                    tooltip: { enabled: false }
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.dataset.label || '';
+                                const value = context.raw;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = Math.round((value / total) * 100);
+                                return `${label}: ${value} دقيقة (${percentage}%)`;
+                            }
+                        }
+                    }
                 }
             }
         });
@@ -259,7 +319,22 @@ class CategoryManager {
         const category = this.getCategory(categoryId);
         if (!category) return;
         
-        document.getElementById('selected-chart').value = categoryId;
+        // تحديث خيارات الفئات
+        const selectEl = document.getElementById('selected-chart');
+        if (selectEl) {
+            selectEl.innerHTML = '';
+            Object.keys(this.categories).forEach(catId => {
+                const cat = this.categories[catId];
+                const option = document.createElement('option');
+                option.value = catId;
+                option.textContent = cat.name;
+                if (catId === categoryId) {
+                    option.selected = true;
+                }
+                selectEl.appendChild(option);
+            });
+        }
+        
         document.getElementById('total-hours').value = Math.floor(category.totalMinutes / 60);
         document.getElementById('total-minutes').value = category.totalMinutes % 60;
         document.getElementById('category-color').value = category.color;
@@ -321,6 +396,145 @@ class CategoryManager {
             taskCategorySelect.value = categoryId;
         }
     }
+    
+    // إدارة الفئات (الدوال الجديدة)
+    loadCategoriesView() {
+        const container = document.querySelector('.categories-list');
+        if (!container) return;
+        
+        let html = '';
+        Object.keys(this.categories).forEach(categoryId => {
+            const category = this.categories[categoryId];
+            const usedMinutes = this.calculateUsedTime(categoryId);
+            const percentage = this.getPercentage(categoryId);
+            const taskCount = getTasksByCategory ? getTasksByCategory(categoryId).length : 0;
+            
+            html += `
+                <div class="category-card" data-category="${categoryId}">
+                    <div class="category-header">
+                        <div class="category-color" style="background: ${category.color};"></div>
+                        <h4>${category.name}</h4>
+                        <span class="category-status ${category.enabled ? 'enabled' : 'disabled'}">
+                            ${category.enabled ? 'مفعلة' : 'معطلة'}
+                        </span>
+                    </div>
+                    
+                    <div class="category-stats">
+                        <div class="stat">
+                            <span class="label">السعة:</span>
+                            <span class="value">${this.formatTime(category.totalMinutes)}</span>
+                        </div>
+                        <div class="stat">
+                            <span class="label">المستخدم:</span>
+                            <span class="value">${this.formatTime(usedMinutes)}</span>
+                        </div>
+                        <div class="stat">
+                            <span class="label">المهام:</span>
+                            <span class="value">${taskCount}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${percentage}%; background: ${category.color};"></div>
+                        <span class="progress-text">${percentage}%</span>
+                    </div>
+                    
+                    <div class="category-actions">
+                        <button class="btn-edit" data-category="${categoryId}">
+                            <i class="fas fa-edit"></i> تعديل
+                        </button>
+                        <button class="btn-view-tasks" data-category="${categoryId}">
+                            <i class="fas fa-tasks"></i> المهام
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+        
+        // تحديث الملخص
+        this.updateCategoriesSummary();
+        
+        // إضافة الأحداث
+        this.attachCategoriesEvents();
+    }
+    
+    updateCategoriesSummary() {
+        const totalCategories = Object.keys(this.categories).length;
+        let totalCapacity = 0;
+        let totalUsed = 0;
+        
+        Object.keys(this.categories).forEach(categoryId => {
+            const category = this.categories[categoryId];
+            const usedMinutes = this.calculateUsedTime(categoryId);
+            
+            totalCapacity += category.totalMinutes;
+            totalUsed += usedMinutes;
+        });
+        
+        document.getElementById('total-categories').textContent = totalCategories;
+        document.getElementById('total-capacity').textContent = this.formatTime(totalCapacity);
+        document.getElementById('total-used').textContent = this.formatTime(totalUsed);
+        document.getElementById('total-remaining').textContent = this.formatTime(totalCapacity - totalUsed);
+    }
+    
+    attachCategoriesEvents() {
+        // أحداث أزرار التعديل
+        document.querySelectorAll('.btn-edit').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const categoryId = e.currentTarget.dataset.category;
+                this.openCategoryModal(categoryId, 'edit');
+            });
+        });
+        
+        // أحداث عرض المهام
+        document.querySelectorAll('.btn-view-tasks').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const categoryId = e.currentTarget.dataset.category;
+                this.selectCategory(categoryId);
+                // الانتقال لعرض المهام
+                document.querySelector('.nav-menu li[data-view="tasks"]').click();
+            });
+        });
+    }
+    
+    openCategoryModal(categoryId = null, mode = 'add') {
+        const modal = document.getElementById('category-modal');
+        const title = document.getElementById('category-modal-title');
+        const form = document.getElementById('category-form');
+        const deleteBtn = document.getElementById('delete-category');
+        
+        if (mode === 'add') {
+            title.textContent = 'إضافة فئة جديدة';
+            form.reset();
+            document.getElementById('category-color').value = this.generateRandomColor();
+            document.getElementById('category-hours').value = 2;
+            document.getElementById('capacity-value').textContent = '2 ساعة';
+            document.getElementById('category-enabled').checked = true;
+            document.getElementById('category-id').value = '';
+            deleteBtn.style.display = 'none';
+        } else {
+            const category = this.getCategory(categoryId);
+            if (!category) return;
+            
+            title.textContent = 'تعديل الفئة';
+            document.getElementById('category-name').value = category.name;
+            document.getElementById('category-color').value = category.color;
+            document.getElementById('category-hours').value = category.totalMinutes / 60;
+            document.getElementById('capacity-value').textContent = `${category.totalMinutes / 60} ساعة`;
+            document.getElementById('category-enabled').checked = category.enabled;
+            document.getElementById('category-id').value = categoryId;
+            deleteBtn.style.display = 'block';
+        }
+        
+        modal.style.display = 'flex';
+    }
+    
+    generateRandomColor() {
+        const colors = ['#4a90e2', '#7b68ee', '#2ecc71', '#e74c3c', '#f39c12', '#9b59b6', '#1abc9c', '#34495e'];
+        return colors[Math.floor(Math.random() * colors.length)];
+    }
 }
 
 // إنشاء كائن عالمي لإدارة الفئات
@@ -340,8 +554,8 @@ function updateDailyChart() {
     // توزيع المهام حسب الفئة
     const categoryDistribution = {};
     todayTasks.forEach(task => {
-        const category = getCategoryName ? getCategoryName(task.category) : task.category;
-        categoryDistribution[category] = (categoryDistribution[category] || 0) + 1;
+        const categoryName = getCategoryName ? getCategoryName(task.category) : task.category;
+        categoryDistribution[categoryName] = (categoryDistribution[categoryName] || 0) + 1;
     });
     
     // تدمير Chart السابق
@@ -349,14 +563,26 @@ function updateDailyChart() {
         window.dailyChart.destroy();
     }
     
+    // الحصول على الألوان من الفئات
+    const labels = Object.keys(categoryDistribution);
+    const colors = labels.map(label => {
+        // البحث عن اللون من الفئة
+        if (typeof categoryManager !== 'undefined') {
+            const categories = categoryManager.getAllCategories();
+            const category = Object.values(categories).find(cat => cat.name === label);
+            return category ? category.color : '#4a90e2';
+        }
+        return '#4a90e2';
+    });
+    
     // إنشاء Chart جديد
     window.dailyChart = new Chart(ctx, {
         type: 'pie',
         data: {
-            labels: Object.keys(categoryDistribution),
+            labels: labels,
             datasets: [{
                 data: Object.values(categoryDistribution),
-                backgroundColor: ['#4a90e2', '#7b68ee', '#2ecc71', '#e74c3c', '#f39c12'],
+                backgroundColor: colors,
                 borderWidth: 2,
                 borderColor: '#fff'
             }]
@@ -371,6 +597,17 @@ function updateDailyChart() {
                         padding: 20,
                         font: {
                             size: 14
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.raw;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = Math.round((value / total) * 100);
+                            return `${label}: ${value} مهمة (${percentage}%)`;
                         }
                     }
                 }
@@ -392,6 +629,9 @@ function updateDailyChart() {
 function initCharts() {
     console.log('تهيئة Charts...');
     
+    // تحديث الفئات المصغرة
+    categoryManager.updateMiniCategories();
+    
     // تحديد الفئة الأولى
     categoryManager.selectCategory('personal');
     
@@ -400,252 +640,6 @@ function initCharts() {
     
     // تحديث Chart الفئة المحددة
     categoryManager.updateSelectedCategoryChart();
-}
-// إدارة الفئات (إضافة في class CategoryManager)
-loadCategoriesView() {
-    const container = document.querySelector('.categories-list');
-    if (!container) return;
-    
-    let html = '';
-    Object.keys(this.categories).forEach(categoryId => {
-        const category = this.categories[categoryId];
-        const usedMinutes = this.calculateUsedTime(categoryId);
-        const percentage = this.getPercentage(categoryId);
-        const taskCount = getTasksByCategory ? getTasksByCategory(categoryId).length : 0;
-        
-        html += `
-            <div class="category-card" data-category="${categoryId}">
-                <div class="category-header">
-                    <div class="category-color" style="background: ${category.color};"></div>
-                    <h4>${category.name}</h4>
-                    <span class="category-status ${category.enabled ? 'enabled' : 'disabled'}">
-                        ${category.enabled ? 'مفعلة' : 'معطلة'}
-                    </span>
-                </div>
-                
-                <div class="category-stats">
-                    <div class="stat">
-                        <span class="label">السعة:</span>
-                        <span class="value">${this.formatTime(category.totalMinutes)}</span>
-                    </div>
-                    <div class="stat">
-                        <span class="label">المستخدم:</span>
-                        <span class="value">${this.formatTime(usedMinutes)}</span>
-                    </div>
-                    <div class="stat">
-                        <span class="label">المهام:</span>
-                        <span class="value">${taskCount}</span>
-                    </div>
-                </div>
-                
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: ${percentage}%; background: ${category.color};"></div>
-                    <span class="progress-text">${percentage}%</span>
-                </div>
-                
-                <div class="category-actions">
-                    <button class="btn-edit" data-category="${categoryId}">
-                        <i class="fas fa-edit"></i> تعديل
-                    </button>
-                    <button class="btn-view-tasks" data-category="${categoryId}">
-                        <i class="fas fa-tasks"></i> المهام
-                    </button>
-                </div>
-            </div>
-        `;
-    });
-    
-    container.innerHTML = html;
-    
-    // تحديث الملخص
-    this.updateCategoriesSummary();
-    
-    // إضافة الأحداث
-    this.attachCategoriesEvents();
-}
-
-updateCategoriesSummary() {
-    const totalCategories = Object.keys(this.categories).length;
-    let totalCapacity = 0;
-    let totalUsed = 0;
-    
-    Object.keys(this.categories).forEach(categoryId => {
-        const category = this.categories[categoryId];
-        const usedMinutes = this.calculateUsedTime(categoryId);
-        
-        totalCapacity += category.totalMinutes;
-        totalUsed += usedMinutes;
-    });
-    
-    document.getElementById('total-categories').textContent = totalCategories;
-    document.getElementById('total-capacity').textContent = this.formatTime(totalCapacity);
-    document.getElementById('total-used').textContent = this.formatTime(totalUsed);
-    document.getElementById('total-remaining').textContent = this.formatTime(totalCapacity - totalUsed);
-}
-
-attachCategoriesEvents() {
-    // أحداث أزرار التعديل
-    document.querySelectorAll('.btn-edit').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const categoryId = e.currentTarget.dataset.category;
-            this.openCategoryModal(categoryId, 'edit');
-        });
-    });
-    
-    // أحداث عرض المهام
-    document.querySelectorAll('.btn-view-tasks').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const categoryId = e.currentTarget.dataset.category;
-            this.selectCategory(categoryId);
-            // الانتقال لعرض المهام
-            document.querySelector('.nav-menu li[data-view="tasks"]').click();
-        });
-    });
-}
-
-openCategoryModal(categoryId = null, mode = 'add') {
-    const modal = document.getElementById('category-modal');
-    const title = document.getElementById('category-modal-title');
-    const form = document.getElementById('category-form');
-    const deleteBtn = document.getElementById('delete-category');
-    
-    if (mode === 'add') {
-        title.textContent = 'إضافة فئة جديدة';
-        form.reset();
-        document.getElementById('category-color').value = this.generateRandomColor();
-        document.getElementById('category-enabled').checked = true;
-        document.getElementById('category-id').value = '';
-        deleteBtn.style.display = 'none';
-    } else {
-        const category = this.getCategory(categoryId);
-        if (!category) return;
-        
-        title.textContent = 'تعديل الفئة';
-        document.getElementById('category-name').value = category.name;
-        document.getElementById('category-color').value = category.color;
-        document.getElementById('category-hours').value = category.totalMinutes / 60;
-        document.getElementById('capacity-value').textContent = `${category.totalMinutes / 60} ساعة`;
-        document.getElementById('category-enabled').checked = category.enabled;
-        document.getElementById('category-id').value = categoryId;
-        deleteBtn.style.display = 'block';
-    }
-    
-    modal.style.display = 'flex';
-}
-
-generateRandomColor() {
-    const colors = ['#4a90e2', '#7b68ee', '#2ecc71', '#e74c3c', '#f39c12', '#9b59b6', '#1abc9c', '#34495e'];
-    return colors[Math.floor(Math.random() * colors.length)];
-}
-
-// إضافة CSS للفئات
-// أضف في style.css:
-.category-card {
-    background: white;
-    border-radius: 10px;
-    padding: 20px;
-    margin-bottom: 15px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-}
-
-.category-header {
-    display: flex;
-    align-items: center;
-    margin-bottom: 15px;
-}
-
-.category-color {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    margin-left: 10px;
-}
-
-.category-status {
-    padding: 3px 10px;
-    border-radius: 15px;
-    font-size: 12px;
-    margin-right: auto;
-}
-
-.category-status.enabled {
-    background: #d4edda;
-    color: #155724;
-}
-
-.category-status.disabled {
-    background: #f8d7da;
-    color: #721c24;
-}
-
-.progress-bar {
-    height: 10px;
-    background: #e9ecef;
-    border-radius: 5px;
-    margin: 15px 0;
-    position: relative;
-}
-
-.progress-fill {
-    height: 100%;
-    border-radius: 5px;
-    transition: width 0.3s;
-}
-
-.progress-text {
-    position: absolute;
-    top: -20px;
-    left: 0;
-    font-size: 12px;
-    font-weight: bold;
-}
-
-.category-actions {
-    display: flex;
-    gap: 10px;
-    margin-top: 15px;
-}
-
-.btn-edit, .btn-view-tasks {
-    padding: 8px 15px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 14px;
-}
-
-.btn-edit {
-    background: #4a90e2;
-    color: white;
-}
-
-.btn-view-tasks {
-    background: #f8f9fa;
-    color: #495057;
-}
-
-.capacity-input {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.capacity-input input[type="range"] {
-    flex: 1;
-}
-
-.btn-danger {
-    background: #e74c3c;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: var(--border-radius);
-    cursor: pointer;
-    font-weight: 500;
-}
-
-.btn-danger:hover {
-    background: #c0392b;
 }
 
 // تعريف الدوال للنافذة العالمية
