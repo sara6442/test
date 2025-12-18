@@ -1,142 +1,241 @@
-<!-- ... بعد قسم الرسوم البيانية ... -->
-<section id="charts-view" class="content-view">
-    <div class="charts-header">
-        <h2>الإحصائيات والنسب</h2>
-        <div class="charts-controls">
-            <select id="chart-period">
-                <option value="today">اليوم</option>
-                <option value="week">هذا الأسبوع</option>
-                <option value="month">هذا الشهر</option>
-            </select>
-            <button id="settings-toggle" class="btn-secondary">
-                <i class="fas fa-cog"></i> إعدادات Charts
-            </button>
-        </div>
-    </div>
-    
-    <!-- نافذة إعدادات Charts -->
-    <div id="chart-settings-modal" class="modal">
-        <div class="modal-content">
-            <h2>إعدادات Charts</h2>
-            <form id="chart-settings-form">
-                <div class="form-group">
-                    <label>اختر Chart للتعديل:</label>
-                    <select id="selected-chart">
-                        <option value="personal">المهام الشخصية</option>
-                        <option value="work">العمل</option>
-                        <option value="study">الدراسة</option>
-                        <option value="health">الصحة</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label>الوقت الكلي للساعات:</label>
-                    <div class="time-input">
-                        <input type="number" id="total-hours" min="1" max="24" value="2">
-                        <span>ساعات</span>
-                        <input type="number" id="total-minutes" min="0" max="59" value="0">
-                        <span>دقائق</span>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label>لون الفئة:</label>
-                    <input type="color" id="category-color" value="#4a90e2">
-                </div>
-                
-                <div class="form-group">
-                    <label>حالة الفئة:</label>
-                    <label class="switch">
-                        <input type="checkbox" id="category-enabled" checked>
-                        <span class="slider"></span>
-                    </label>
-                    <span id="status-text">مفعلة</span>
-                </div>
-                
-                <div class="current-stats">
-                    <h4>الإحصائيات الحالية:</h4>
-                    <div class="stats-grid">
-                        <div class="stat-item">
-                            <span class="stat-label">المستخدم:</span>
-                            <span class="stat-value" id="used-time">0 ساعة 0 دقيقة</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">المتبقي:</span>
-                            <span class="stat-value" id="remaining-time">2 ساعة 0 دقيقة</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">النسبة:</span>
-                            <span class="stat-value" id="percentage">0%</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">عدد المهام:</span>
-                            <span class="stat-value" id="task-count">0</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="form-actions">
-                    <button type="button" id="close-settings" class="btn-secondary">إغلاق</button>
-                    <button type="submit" class="btn-primary">حفظ الإعدادات</button>
-                </div>
-            </form>
-        </div>
-    </div>
-    
-    <!-- شبكة Charts -->
-    <div class="charts-grid">
-        <!-- Chart للمهام الشخصية -->
-        <div class="chart-wrapper" data-category="personal">
-            <div class="chart-header">
-                <h3>المهام الشخصية</h3>
-                <button class="chart-settings-btn" data-category="personal">
-                    <i class="fas fa-cog"></i>
-                </button>
-            </div>
-            <div class="chart-container">
-                <canvas id="personal-chart"></canvas>
-                <div class="chart-progress">
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: 0%; background: #4a90e2;"></div>
-                    </div>
-                    <span class="progress-text">0% مكتمل</span>
-                </div>
-                <div class="chart-time-info">
-                    <span><i class="far fa-clock"></i> 0/2 ساعة</span>
-                    <span id="personal-status" class="status-available">متاح</span>
-                </div>
-            </div>
-            <button class="btn-add-to-category" data-category="personal">
-                <i class="fas fa-plus"></i> إضافة مهمة لهذه الفئة
-            </button>
-        </div>
+<!-- ... بداية الملف كما هو ... -->
+
+<script src="script.js"></script>
+<script src="components/taskManager.js"></script>
+<script src="components/categoryManager.js"></script> <!-- الملف الجديد -->
+<script src="components/calendar.js"></script>
+<script src="components/charts.js"></script> <!-- هذا سيتغير -->
+
+<script>
+    // تهيئة التطبيق
+    document.addEventListener('DOMContentLoaded', function() {
+        // تحديث التاريخ والوقت
+        function updateDateTime() {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('ar-SA', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            
+            const timeStr = now.toLocaleTimeString('ar-SA', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            document.getElementById('current-date').textContent = dateStr;
+            document.getElementById('current-time').textContent = timeStr;
+        }
         
-        <!-- Chart للعمل -->
-        <div class="chart-wrapper" data-category="work">
-            <div class="chart-header">
-                <h3>العمل</h3>
-                <button class="chart-settings-btn" data-category="work">
-                    <i class="fas fa-cog"></i>
-                </button>
-            </div>
-            <div class="chart-container">
-                <canvas id="work-chart"></canvas>
-                <div class="chart-progress">
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: 0%; background: #7b68ee;"></div>
-                    </div>
-                    <span class="progress-text">0% مكتمل</span>
-                </div>
-                <div class="chart-time-info">
-                    <span><i class="far fa-clock"></i> 0/8 ساعة</span>
-                    <span id="work-status" class="status-available">متاح</span>
-                </div>
-            </div>
-            <button class="btn-add-to-category" data-category="work">
-                <i class="fas fa-plus"></i> إضافة مهمة لهذه الفئة
-            </button>
-        </div>
+        updateDateTime();
+        setInterval(updateDateTime, 60000);
         
-        <!-- أضف بقية الفئات بنفس الطريقة -->
-    </div>
-</section>
+        // إدارة النوافذ
+        const views = document.querySelectorAll('.nav-menu li[data-view]');
+        const contentViews = document.querySelectorAll('.content-view');
+        
+        views.forEach(view => {
+            view.addEventListener('click', function() {
+                const viewId = this.getAttribute('data-view');
+                
+                // تحديث القائمة النشطة
+                views.forEach(v => v.classList.remove('active'));
+                this.classList.add('active');
+                
+                // إظهار العرض المحدد
+                contentViews.forEach(v => v.classList.remove('active'));
+                document.getElementById(`${viewId}-view`).classList.add('active');
+                
+                // إذا كانت نافذة Charts، قم بتحديثها
+                if (viewId === 'charts' && typeof updateAllCharts === 'function') {
+                    updateAllCharts();
+                }
+            });
+        });
+        
+        // إدارة نافذة المهام
+        const taskModal = document.getElementById('task-modal');
+        const addTaskBtn = document.getElementById('add-task-btn');
+        const cancelTaskBtn = document.getElementById('cancel-task');
+        const taskForm = document.getElementById('task-form');
+        
+        addTaskBtn.addEventListener('click', () => {
+            taskModal.style.display = 'flex';
+            // إعادة تعيين الفئة إلى الافتراضي
+            document.getElementById('task-category').value = 'personal';
+        });
+        
+        cancelTaskBtn.addEventListener('click', () => {
+            taskModal.style.display = 'none';
+            taskForm.reset();
+        });
+        
+        // إغلاق النافذة عند النقر خارجها
+        window.addEventListener('click', (e) => {
+            if (e.target === taskModal || e.target === document.getElementById('chart-settings-modal')) {
+                taskModal.style.display = 'none';
+                document.getElementById('chart-settings-modal').style.display = 'none';
+                taskForm.reset();
+            }
+        });
+        
+        // معالجة إضافة مهمة
+        taskForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const taskData = {
+                id: Date.now(),
+                title: document.getElementById('task-title').value,
+                category: document.getElementById('task-category').value,
+                duration: parseInt(document.getElementById('task-duration').value),
+                time: document.getElementById('task-time').value,
+                repeat: document.getElementById('task-repeat').value,
+                completed: false,
+                createdAt: new Date().toISOString()
+            };
+            
+            // التحقق من الحدود باستخدام categoryManager
+            if (typeof categoryManager !== 'undefined' && 
+                typeof categoryManager.canAddTask === 'function') {
+                
+                if (!categoryManager.canAddTask(taskData.category, taskData.duration)) {
+                    const category = categoryManager.getCategory(taskData.category);
+                    const remaining = categoryManager.getRemainingTime(taskData.category);
+                    
+                    alert(`❌ لا يمكن إضافة هذه المهمة!\nالمدة المطلوبة: ${taskData.duration} دقيقة\nالوقت المتبقي في الفئة: ${remaining} دقيقة`);
+                    return;
+                }
+            }
+            
+            // حفظ المهمة
+            if (typeof saveTask === 'function') {
+                saveTask(taskData);
+            }
+            
+            taskModal.style.display = 'none';
+            this.reset();
+            
+            // إعادة تحميل العروض
+            if (typeof loadTasks === 'function') {
+                loadTasks();
+            }
+            
+            if (typeof loadCalendar === 'function') {
+                loadCalendar();
+            }
+            
+            if (typeof updateAllCharts === 'function') {
+                updateAllCharts();
+            }
+        });
+        
+        // إدارة Charts التفاعلية
+        document.querySelectorAll('.chart-settings-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const category = this.getAttribute('data-category');
+                openChartSettings(category);
+            });
+        });
+        
+        // إضافة مهمة لفئة محددة
+        document.querySelectorAll('.btn-add-to-category').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const category = this.getAttribute('data-category');
+                openAddTaskForCategory(category);
+            });
+        });
+        
+        // فتح إعدادات Charts العامة
+        document.getElementById('settings-toggle')?.addEventListener('click', function() {
+            document.getElementById('chart-settings-modal').style.display = 'flex';
+            if (typeof loadChartSettings === 'function') {
+                loadChartSettings('personal');
+            }
+        });
+        
+        // إغلاق إعدادات Charts
+        document.getElementById('close-settings')?.addEventListener('click', function() {
+            document.getElementById('chart-settings-modal').style.display = 'none';
+        });
+        
+        // تغيير Chart المحدد في الإعدادات
+        document.getElementById('selected-chart')?.addEventListener('change', function() {
+            if (typeof loadChartSettings === 'function') {
+                loadChartSettings(this.value);
+            }
+        });
+        
+        // حفظ إعدادات Chart
+        document.getElementById('chart-settings-form')?.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            if (typeof categoryManager === 'undefined') return;
+            
+            const categoryId = document.getElementById('selected-chart').value;
+            const hours = parseInt(document.getElementById('total-hours').value) || 0;
+            const minutes = parseInt(document.getElementById('total-minutes').value) || 0;
+            const totalMinutes = (hours * 60) + minutes;
+            const color = document.getElementById('category-color').value;
+            const enabled = document.getElementById('category-enabled').checked;
+            
+            categoryManager.updateCategory(categoryId, {
+                totalMinutes,
+                color,
+                enabled
+            });
+            
+            // تحديث الواجهة
+            if (typeof updateAllCharts === 'function') {
+                updateAllCharts();
+            }
+            
+            document.getElementById('chart-settings-modal').style.display = 'none';
+            
+            // إعادة تحميل المهام إذا كان هناك تغيير
+            if (typeof loadTasks === 'function') {
+                loadTasks();
+            }
+        });
+        
+        // تهيئة التطبيق
+        if (typeof initApp === 'function') {
+            initApp();
+        }
+        
+        if (typeof initCharts === 'function') {
+            initCharts();
+        }
+    });
+    
+    // دالة لفتح إعدادات Chart
+    function openChartSettings(category) {
+        document.getElementById('chart-settings-modal').style.display = 'flex';
+        document.getElementById('selected-chart').value = category;
+        if (typeof loadChartSettings === 'function') {
+            loadChartSettings(category);
+        }
+    }
+    
+    // دالة لفتح إضافة مهمة لفئة محددة
+    function openAddTaskForCategory(category) {
+        // التحقق إذا كانت الفئة ممتلئة
+        if (typeof categoryManager !== 'undefined') {
+            const categoryData = categoryManager.getCategory(category);
+            if (categoryData && categoryData.usedMinutes >= categoryData.totalMinutes && categoryData.totalMinutes > 0) {
+                alert(`❌ لا يمكن إضافة مهام جديدة لهذه الفئة!\nلقد وصلت إلى الحد الأقصى للوقت`);
+                return;
+            }
+        }
+        
+        // فتح نافذة إضافة مهمة مع تحديد الفئة
+        document.getElementById('task-modal').style.display = 'flex';
+        document.getElementById('task-category').value = category;
+    }
+    
+    // تعريف الدوال للنافذة العالمية
+    window.openChartSettings = openChartSettings;
+    window.openAddTaskForCategory = openAddTaskForCategory;
+</script>
+</body>
+</html>
