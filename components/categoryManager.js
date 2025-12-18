@@ -1,145 +1,64 @@
-// بعد تعريف class CategoryManager، أضف:
+// تخزين الفئات
+let categories = JSON.parse(localStorage.getItem('categories')) || [];
 
-// تحديث الرسوم البيانية بعد إضافة مهمة
-function updateAllCharts() {
-    if (typeof updateDailyChart === 'function') {
-        updateDailyChart();
-    }
-    
-    if (typeof categoryManager !== 'undefined' && 
-        typeof categoryManager.updateSelectedCategoryChart === 'function') {
-        categoryManager.updateSelectedCategoryChart();
-    }
-    
-    if (typeof categoryManager !== 'undefined' && 
-        typeof categoryManager.updateMiniCategories === 'function') {
-        categoryManager.updateMiniCategories();
+// وظائف إدارة الفئات
+export function addCategory(category) {
+    categories.push(category);
+    saveToLocalStorage();
+}
+
+export function deleteCategory(categoryId) {
+    categories = categories.filter(category => category.id !== categoryId);
+    saveToLocalStorage();
+}
+
+export function updateCategory(categoryId, updatedCategory) {
+    const index = categories.findIndex(category => category.id === categoryId);
+    if (index !== -1) {
+        categories[index] = { ...categories[index], ...updatedCategory };
+        saveToLocalStorage();
     }
 }
 
-// تحديث Chart اليومي بشكل صحيح
-function updateDailyChart() {
-    const ctx = document.getElementById('daily-summary-chart');
-    if (!ctx) return;
-    
-    const allTasks = getAllTasks ? getAllTasks() : [];
-    const todayTasks = getTasksByDate ? getTasksByDate() : [];
-    const completedTasks = todayTasks.filter(task => task.completed).length;
-    const totalTime = todayTasks.reduce((sum, task) => sum + task.duration, 0);
-    const completionRate = todayTasks.length > 0 ? Math.round((completedTasks / todayTasks.length) * 100) : 0;
-    
-    // توزيع المهام حسب الفئة مع حساب الوقت لكل فئة
-    const categoryData = {};
-    todayTasks.forEach(task => {
-        const categoryId = task.category;
-        const category = categoryManager ? categoryManager.getCategory(categoryId) : null;
-        const categoryName = category ? category.name : task.category;
-        
-        if (!categoryData[categoryName]) {
-            categoryData[categoryName] = {
-                time: 0,
-                count: 0,
-                color: category ? category.color : '#4a90e2'
-            };
-        }
-        categoryData[categoryName].time += task.duration;
-        categoryData[categoryName].count++;
-    });
-    
-    // تدمير Chart السابق
-    if (window.dailyChart) {
-        window.dailyChart.destroy();
-    }
-    
-    // إعداد بيانات Chart
-    const labels = Object.keys(categoryData);
-    const timeData = labels.map(label => categoryData[label].time);
-    const colors = labels.map(label => categoryData[label].color);
-    
-    // إنشاء Chart جديد
-    window.dailyChart = new Chart(ctx, {
-        type: 'pie',
-        data: {
-            labels: labels,
-            datasets: [{
-                data: timeData,
-                backgroundColor: colors,
-                borderWidth: 2,
-                borderColor: '#fff'
-            }]
+export function getCategories() {
+    return [...categories];
+}
+
+export function getCategoryById(categoryId) {
+    return categories.find(category => category.id === categoryId);
+}
+
+// حفظ في التخزين المحلي
+function saveToLocalStorage() {
+    localStorage.setItem('categories', JSON.stringify(categories));
+}
+
+// تهيئة بعض الفئات التجريبية
+if (categories.length === 0) {
+    const sampleCategories = [
+        {
+            id: 'personal',
+            name: 'مهام شخصية',
+            color: '#4361ee',
+            icon: 'fas fa-home',
+            createdAt: new Date().toISOString()
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        padding: 20,
-                        font: {
-                            size: 14
-                        }
-                    }
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const label = context.label || '';
-                            const value = context.raw;
-                            const hours = Math.floor(value / 60);
-                            const minutes = value % 60;
-                            const timeStr = hours > 0 ? `${hours}س ${minutes}د` : `${minutes}د`;
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = Math.round((value / total) * 100);
-                            const count = categoryData[label]?.count || 0;
-                            return `${label}: ${timeStr} (${count} مهمة، ${percentage}%)`;
-                        }
-                    }
-                }
-            }
+        {
+            id: 'work',
+            name: 'عمل',
+            color: '#f72585',
+            icon: 'fas fa-briefcase',
+            createdAt: new Date().toISOString()
+        },
+        {
+            id: 'study',
+            name: 'دراسة',
+            color: '#4cc9f0',
+            icon: 'fas fa-graduation-cap',
+            createdAt: new Date().toISOString()
         }
-    });
+    ];
     
-    // تحديث الإحصائيات
-    const totalTasksEl = document.getElementById('daily-total-tasks');
-    const totalTimeEl = document.getElementById('daily-total-time');
-    const completionEl = document.getElementById('daily-completion');
-    
-    if (totalTasksEl) totalTasksEl.textContent = todayTasks.length;
-    
-    const hours = Math.floor(totalTime / 60);
-    const minutes = totalTime % 60;
-    if (totalTimeEl) {
-        if (hours > 0) {
-            totalTimeEl.textContent = `${hours}س ${minutes}د`;
-        } else {
-            totalTimeEl.textContent = `${minutes}د`;
-        }
-    }
-    
-    if (completionEl) completionEl.textContent = `${completionRate}%`;
+    categories = sampleCategories;
+    saveToLocalStorage();
 }
-
-// تهيئة Charts عند تحميل الصفحة
-function initCharts() {
-    console.log('تهيئة Charts...');
-    
-    if (typeof categoryManager !== 'undefined') {
-        // تحديث الفئات المصغرة
-        categoryManager.updateMiniCategories();
-        
-        // تحديد الفئة الأولى
-        categoryManager.selectCategory('personal');
-        
-        // تحديث Chart اليومي
-        updateDailyChart();
-        
-        // تحديث Chart الفئة المحددة
-        categoryManager.updateSelectedCategoryChart();
-    }
-}
-
-// تعريف الدوال للنافذة العالمية
-window.updateAllCharts = updateAllCharts;
-window.updateDailyChart = updateDailyChart;
-window.initCharts = initCharts;
