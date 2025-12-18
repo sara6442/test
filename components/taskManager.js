@@ -13,6 +13,11 @@ function saveTask(task) {
         }
     }
     
+    // تعيين تاريخ الإنشاء إذا لم يكن موجوداً
+    if (!task.createdAt) {
+        task.createdAt = new Date().toISOString();
+    }
+    
     tasks.push(task);
     localStorage.setItem('tasks', JSON.stringify(tasks));
     console.log('تم حفظ المهمة:', task);
@@ -28,9 +33,26 @@ function saveTask(task) {
 function updateTask(id, updates) {
     const index = tasks.findIndex(task => task.id === id);
     if (index !== -1) {
+        const oldCategory = tasks[index].category;
+        const newCategory = updates.category || oldCategory;
+        const oldDuration = tasks[index].duration;
+        const newDuration = updates.duration || oldDuration;
+        
+        // تحديث المهمة
         tasks[index] = { ...tasks[index], ...updates };
         localStorage.setItem('tasks', JSON.stringify(tasks));
         console.log('تم تحديث المهمة:', tasks[index]);
+        
+        // تحديث أوقات الفئات إذا تغيرت المدة أو الفئة
+        if (typeof categoryManager !== 'undefined') {
+            if (oldCategory !== newCategory || oldDuration !== newDuration) {
+                categoryManager.calculateUsedTime(oldCategory);
+                if (oldCategory !== newCategory) {
+                    categoryManager.calculateUsedTime(newCategory);
+                }
+            }
+        }
+        
         return tasks[index];
     }
     return null;
@@ -40,9 +62,17 @@ function deleteTask(id) {
     const taskIndex = tasks.findIndex(task => task.id === id);
     if (taskIndex !== -1) {
         const deletedTask = tasks[taskIndex];
+        const taskCategory = deletedTask.category;
+        
         tasks = tasks.filter(task => task.id !== id);
         localStorage.setItem('tasks', JSON.stringify(tasks));
         console.log('تم حذف المهمة:', deletedTask);
+        
+        // تحديث وقت الفئة المستخدم
+        if (typeof categoryManager !== 'undefined') {
+            categoryManager.calculateUsedTime(taskCategory);
+        }
+        
         return true;
     }
     return false;
@@ -65,6 +95,11 @@ function getAllTasks() {
 }
 
 function getCategoryName(category) {
+    if (typeof categoryManager !== 'undefined') {
+        const cat = categoryManager.getCategory(category);
+        return cat ? cat.name : category;
+    }
+    
     const categories = {
         'personal': 'مهام شخصية',
         'work': 'عمل',
@@ -75,6 +110,11 @@ function getCategoryName(category) {
 }
 
 function getCategoryColor(category) {
+    if (typeof categoryManager !== 'undefined') {
+        const cat = categoryManager.getCategory(category);
+        return cat ? cat.color : '#6c757d';
+    }
+    
     const colors = {
         'personal': '#4a90e2',
         'work': '#7b68ee',
@@ -114,6 +154,9 @@ function loadTasks() {
         return;
     }
     
+    // تحديث خيارات الفئات في نموذج إضافة المهمة
+    updateTaskCategoryOptions();
+    
     todayTasks.forEach(task => {
         const categoryColor = getCategoryColor(task.category);
         
@@ -150,6 +193,43 @@ function loadTasks() {
     // إضافة أحداث للمهام الجديدة
     attachTaskEvents();
     updateTaskStats();
+}
+
+function updateTaskCategoryOptions() {
+    const categorySelect = document.getElementById('task-category');
+    if (!categorySelect) return;
+    
+    // مسح الخيارات القديمة
+    categorySelect.innerHTML = '';
+    
+    // إضافة خيارات الفئات من categoryManager
+    if (typeof categoryManager !== 'undefined') {
+        const categories = categoryManager.getAllCategories();
+        Object.keys(categories).forEach(categoryId => {
+            const category = categories[categoryId];
+            if (category.enabled) {
+                const option = document.createElement('option');
+                option.value = categoryId;
+                option.textContent = category.name;
+                categorySelect.appendChild(option);
+            }
+        });
+    } else {
+        // خيارات افتراضية
+        const defaultOptions = [
+            { value: 'personal', name: 'مهام شخصية' },
+            { value: 'work', name: 'عمل' },
+            { value: 'study', name: 'دراسة' },
+            { value: 'health', name: 'صحة' }
+        ];
+        
+        defaultOptions.forEach(opt => {
+            const option = document.createElement('option');
+            option.value = opt.value;
+            option.textContent = opt.name;
+            categorySelect.appendChild(option);
+        });
+    }
 }
 
 function attachTaskEvents() {
@@ -222,6 +302,11 @@ function updateTaskStats() {
 
 function initApp() {
     console.log('تهيئة تطبيق المهام...');
+    
+    // تحديث خيارات الفئات
+    updateTaskCategoryOptions();
+    
+    // تحميل المهام
     loadTasks();
 }
 
@@ -235,3 +320,5 @@ window.initApp = initApp;
 window.getTasksByCategory = getTasksByCategory;
 window.getAllTasks = getAllTasks;
 window.getCategoryColor = getCategoryColor;
+window.getTasksByDate = getTasksByDate;
+window.getCategoryName = getCategoryName;
