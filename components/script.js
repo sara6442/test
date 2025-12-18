@@ -260,4 +260,211 @@ function loadStatsView() {
                 
                 <div class="stat-card">
                     <div class="stat-icon">
-                        <i class="fas fa-chart-line" style="color: var(--accent-color)"></i
+                        <i class="fas fa-chart-line" style="color: var(--accent-color)"></i>
+                    </div>
+                    <div class="stat-value">${completionRate}%</div>
+                    <div class="stat-label">نسبة الإنجاز</div>
+                </div>
+                
+                ${categoryStats}
+            </div>
+        </div>
+    `;
+}
+
+// تحميل عرض الفئات
+function loadCategoriesView() {
+    const categoriesList = document.getElementById('categories-list');
+    const categories = getCategories();
+    
+    if (categories.length === 0) {
+        categoriesList.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-tags fa-3x"></i>
+                <h4>لا توجد فئات</h4>
+                <p>اضغط على "إضافة فئة جديدة" لإنشاء فئتك الأولى</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    categories.forEach(category => {
+        html += `
+            <div class="category-item" data-id="${category.id}">
+                <div class="category-color" style="background: ${category.color}"></div>
+                <i class="${category.icon || 'fas fa-tag'}"></i>
+                <div class="category-name">${category.name}</div>
+                <div class="category-actions">
+                    <button class="btn btn-secondary btn-sm edit-category" data-id="${category.id}">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-danger btn-sm delete-category" data-id="${category.id}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    
+    categoriesList.innerHTML = html;
+    
+    // إضافة مستمعي الأحداث للفئات
+    document.querySelectorAll('.delete-category').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const categoryId = this.dataset.id;
+            if (confirm('هل أنت متأكد من حذف هذه الفئة؟ سيتم إزالة الفئة من جميع المهام.')) {
+                deleteCategory(categoryId);
+                loadCategoriesView();
+                loadTasksView();
+            }
+        });
+    });
+}
+
+// فتح نافذة إضافة مهمة
+function openAddTaskModal() {
+    loadCategoryOptions();
+    addTaskModal.classList.add('active');
+}
+
+// تحميل خيارات الفئات
+function loadCategoryOptions() {
+    const categorySelect = document.getElementById('task-category');
+    const categories = getCategories();
+    
+    categorySelect.innerHTML = '';
+    
+    categories.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category.id;
+        option.textContent = category.name;
+        option.style.color = category.color;
+        categorySelect.appendChild(option);
+    });
+    
+    if (categories.length === 0) {
+        const option = document.createElement('option');
+        option.value = 'general';
+        option.textContent = 'عام';
+        categorySelect.appendChild(option);
+    }
+}
+
+// حفظ مهمة جديدة
+function saveNewTask() {
+    const title = document.getElementById('task-title').value;
+    const description = document.getElementById('task-description').value;
+    const categoryId = document.getElementById('task-category').value;
+    const duration = parseInt(document.getElementById('task-duration').value) || 30;
+    const date = document.getElementById('task-date').value;
+    const time = document.getElementById('task-time').value;
+    const repeat = document.getElementById('task-repeat').value;
+    
+    if (!title.trim()) {
+        alert('يرجى إدخال عنوان المهمة');
+        return;
+    }
+    
+    const task = {
+        id: Date.now().toString(),
+        title: title.trim(),
+        description: description.trim(),
+        categoryId: categoryId,
+        duration: duration,
+        date: date,
+        time: time,
+        repeat: repeat,
+        completed: false,
+        createdAt: new Date().toISOString()
+    };
+    
+    addTask(task);
+    addTaskModal.classList.remove('active');
+    taskForm.reset();
+    
+    // تحديث العرض الحالي
+    loadViewContent(currentView);
+}
+
+// فتح نافذة إضافة فئة
+function openAddCategoryModal() {
+    addCategoryModal.classList.add('active');
+}
+
+// حفظ فئة جديدة
+function saveNewCategory() {
+    const name = document.getElementById('category-name').value;
+    const color = document.getElementById('category-color').value;
+    const icon = document.getElementById('category-icon').value;
+    
+    if (!name.trim()) {
+        alert('يرجى إدخال اسم الفئة');
+        return;
+    }
+    
+    const category = {
+        id: Date.now().toString(),
+        name: name.trim(),
+        color: color,
+        icon: icon,
+        createdAt: new Date().toISOString()
+    };
+    
+    addCategory(category);
+    addCategoryModal.classList.remove('active');
+    categoryForm.reset();
+    
+    loadCategoriesView();
+}
+
+// مستمعي الأحداث عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', () => {
+    initializeDate();
+    switchView('tasks');
+    
+    // التنقل الجانبي
+    navItems.forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.preventDefault();
+            const viewName = item.dataset.view;
+            switchView(viewName);
+        });
+    });
+    
+    // التنقل الزمني
+    timeButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            timeButtons.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            if (currentView === 'calendar') {
+                loadCalendarView();
+            }
+        });
+    });
+    
+    // إضافة مهمة
+    addTaskBtn.addEventListener('click', openAddTaskModal);
+    closeTaskModal.addEventListener('click', () => addTaskModal.classList.remove('active'));
+    cancelTaskBtn.addEventListener('click', () => addTaskModal.classList.remove('active'));
+    saveTaskBtn.addEventListener('click', saveNewTask);
+    
+    // إضافة فئة
+    addCategoryBtn.addEventListener('click', openAddCategoryModal);
+    closeCategoryModal.addEventListener('click', () => addCategoryModal.classList.remove('active'));
+    cancelCategoryBtn.addEventListener('click', () => addCategoryModal.classList.remove('active'));
+    saveCategoryBtn.addEventListener('click', saveNewCategory);
+    
+    // إغلاق النوافذ عند النقر خارجها
+    window.addEventListener('click', (e) => {
+        if (e.target === addTaskModal) {
+            addTaskModal.classList.remove('active');
+        }
+        if (e.target === addCategoryModal) {
+            addCategoryModal.classList.remove('active');
+        }
+    });
+});
+
+// تصدير الوظائف للاستخدام في ملفات أخرى
+export { switchView, loadViewContent };
