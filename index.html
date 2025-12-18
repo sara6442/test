@@ -21,7 +21,7 @@
                 <ul>
                     <li class="active" data-view="tasks">
                         <i class="fas fa-calendar-day"></i>
-                        <span>اليوم</span>
+                        <span>المهام</span>
                     </li>
                     <li data-view="calendar">
                         <i class="fas fa-calendar-alt"></i>
@@ -51,9 +51,18 @@
             <!-- نافذة إضافة مهمة -->
             <div id="task-modal" class="modal">
                 <div class="modal-content">
+                    <span class="close-modal" id="close-task-modal">&times;</span>
                     <h2>إضافة مهمة جديدة</h2>
                     <form id="task-form">
-                        <input type="text" id="task-title" placeholder="عنوان المهمة" required>
+                        <div class="form-group">
+                            <label for="task-title">عنوان المهمة:</label>
+                            <input type="text" id="task-title" placeholder="أدخل عنوان المهمة" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="task-description">وصف المهمة:</label>
+                            <textarea id="task-description" placeholder="أدخل وصف المهمة (اختياري)" rows="3"></textarea>
+                        </div>
                         
                         <div class="form-group">
                             <label for="task-category">الفئة:</label>
@@ -83,7 +92,7 @@
                                 <option value="none">لا يوجد</option>
                                 <option value="daily">يومياً</option>
                                 <option value="weekly">أسبوعياً</option>
-                                <option value="weekdays">أيام الأسبوع</option>
+                                <option value="monthly">شهرياً</option>
                             </select>
                         </div>
                         
@@ -98,6 +107,7 @@
             <!-- نافذة إعدادات Charts -->
             <div id="chart-settings-modal" class="modal">
                 <div class="modal-content">
+                    <span class="close-modal" id="close-settings-modal">&times;</span>
                     <h2>إعدادات Charts</h2>
                     <form id="chart-settings-form">
                         <div class="form-group">
@@ -182,16 +192,23 @@
             <!-- الجدول الزمني -->
             <section id="calendar-view" class="content-view">
                 <div class="calendar-header">
-                    <h2>جدول اليوم بالساعات</h2>
-                    <div class="date-navigation">
-                        <button id="prev-day"><i class="fas fa-chevron-right"></i></button>
-                        <span id="selected-date">اليوم</span>
-                        <button id="next-day"><i class="fas fa-chevron-left"></i></button>
+                    <h2>الجدول الزمني</h2>
+                    <div class="calendar-controls">
+                        <div class="period-selector">
+                            <button class="period-btn active" data-period="day">اليوم</button>
+                            <button class="period-btn" data-period="week">الأسبوع</button>
+                            <button class="period-btn" data-period="month">الشهر</button>
+                        </div>
+                        <div class="date-navigation">
+                            <button id="prev-period"><i class="fas fa-chevron-right"></i></button>
+                            <span id="selected-period">اليوم</span>
+                            <button id="next-period"><i class="fas fa-chevron-left"></i></button>
+                        </div>
                     </div>
                 </div>
                 
-                <div id="time-slots">
-                    <!-- الجدول الزمني بالساعات -->
+                <div id="calendar-container">
+                    <!-- الجدول الزمني يظهر هنا -->
                 </div>
             </section>
 
@@ -206,119 +223,100 @@
                     </div>
                 </div>
                 
-                <!-- شبكة Charts -->
-                <div class="charts-grid">
-                    <!-- Chart للمهام الشخصية -->
-                    <div class="chart-wrapper" data-category="personal">
+                <!-- Chart شامل للمهام اليومية -->
+                <div class="daily-chart-container">
+                    <div class="chart-wrapper large-chart">
                         <div class="chart-header">
-                            <h3>المهام الشخصية</h3>
-                            <button class="chart-settings-btn" data-category="personal">
-                                <i class="fas fa-cog"></i>
-                            </button>
+                            <h3>مهام اليوم</h3>
                         </div>
                         <div class="chart-container">
-                            <canvas id="personal-chart"></canvas>
-                            <div class="chart-progress">
-                                <div class="progress-bar">
-                                    <div class="progress-fill" style="width: 0%; background: #4a90e2;"></div>
+                            <canvas id="daily-summary-chart"></canvas>
+                            <div class="chart-stats">
+                                <div class="stat">
+                                    <span class="stat-value" id="daily-total-tasks">0</span>
+                                    <span class="stat-label">المهام</span>
                                 </div>
-                                <span class="progress-text">0% مكتمل</span>
-                            </div>
-                            <div class="chart-time-info">
-                                <span><i class="far fa-clock"></i> 0/2 ساعة</span>
-                                <span id="personal-status" class="status">متاح</span>
+                                <div class="stat">
+                                    <span class="stat-value" id="daily-total-time">0 س</span>
+                                    <span class="stat-label">الوقت</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-value" id="daily-completion">0%</span>
+                                    <span class="stat-label">إنجاز</span>
+                                </div>
                             </div>
                         </div>
-                        <button class="btn-add-to-category" data-category="personal">
-                            <i class="fas fa-plus"></i> إضافة مهمة لهذه الفئة
-                        </button>
                     </div>
-                    
-                    <!-- Chart للعمل -->
-                    <div class="chart-wrapper" data-category="work">
-                        <div class="chart-header">
-                            <h3>العمل</h3>
-                            <button class="chart-settings-btn" data-category="work">
-                                <i class="fas fa-cog"></i>
-                            </button>
+                </div>
+                
+                <!-- فئات مصغرة -->
+                <div class="categories-mini">
+                    <h3>الفئات</h3>
+                    <div class="mini-categories-list">
+                        <div class="mini-category active" data-category="personal">
+                            <div class="mini-color" style="background: #4a90e2;"></div>
+                            <span class="mini-name">شخصية</span>
                         </div>
-                        <div class="chart-container">
-                            <canvas id="work-chart"></canvas>
-                            <div class="chart-progress">
-                                <div class="progress-bar">
-                                    <div class="progress-fill" style="width: 0%; background: #7b68ee;"></div>
-                                </div>
-                                <span class="progress-text">0% مكتمل</span>
-                            </div>
-                            <div class="chart-time-info">
-                                <span><i class="far fa-clock"></i> 0/8 ساعة</span>
-                                <span id="work-status" class="status">متاح</span>
-                            </div>
+                        <div class="mini-category" data-category="work">
+                            <div class="mini-color" style="background: #7b68ee;"></div>
+                            <span class="mini-name">عمل</span>
                         </div>
-                        <button class="btn-add-to-category" data-category="work">
-                            <i class="fas fa-plus"></i> إضافة مهمة لهذه الفئة
-                        </button>
+                        <div class="mini-category" data-category="study">
+                            <div class="mini-color" style="background: #2ecc71;"></div>
+                            <span class="mini-name">دراسة</span>
+                        </div>
+                        <div class="mini-category" data-category="health">
+                            <div class="mini-color" style="background: #e74c3c;"></div>
+                            <span class="mini-name">صحة</span>
+                        </div>
                     </div>
-                    
-                    <!-- Chart للدراسة -->
-                    <div class="chart-wrapper" data-category="study">
+                </div>
+                
+                <!-- Chart للفئة المحددة -->
+                <div class="selected-category-chart">
+                    <div class="chart-wrapper expanded-chart">
                         <div class="chart-header">
-                            <h3>الدراسة</h3>
-                            <button class="chart-settings-btn" data-category="study">
-                                <i class="fas fa-cog"></i>
-                            </button>
+                            <h3 id="selected-category-name">المهام الشخصية</h3>
+                            <div class="chart-actions">
+                                <button class="chart-settings-btn" id="category-settings-btn">
+                                    <i class="fas fa-cog"></i>
+                                </button>
+                                <button class="btn-add-task" id="add-task-selected-category">
+                                    <i class="fas fa-plus"></i> إضافة مهمة
+                                </button>
+                            </div>
                         </div>
                         <div class="chart-container">
-                            <canvas id="study-chart"></canvas>
-                            <div class="chart-progress">
-                                <div class="progress-bar">
-                                    <div class="progress-fill" style="width: 0%; background: #2ecc71;"></div>
+                            <canvas id="selected-category-chart"></canvas>
+                            <div class="chart-details">
+                                <div class="detail-item">
+                                    <span class="detail-label">الوقت المستخدم:</span>
+                                    <span class="detail-value" id="category-used-time">0 ساعة 0 دقيقة</span>
                                 </div>
-                                <span class="progress-text">0% مكتمل</span>
-                            </div>
-                            <div class="chart-time-info">
-                                <span><i class="far fa-clock"></i> 0/3 ساعة</span>
-                                <span id="study-status" class="status">متاح</span>
-                            </div>
-                        </div>
-                        <button class="btn-add-to-category" data-category="study">
-                            <i class="fas fa-plus"></i> إضافة مهمة لهذه الفئة
-                        </button>
-                    </div>
-                    
-                    <!-- Chart للصحة -->
-                    <div class="chart-wrapper" data-category="health">
-                        <div class="chart-header">
-                            <h3>الصحة</h3>
-                            <button class="chart-settings-btn" data-category="health">
-                                <i class="fas fa-cog"></i>
-                            </button>
-                        </div>
-                        <div class="chart-container">
-                            <canvas id="health-chart"></canvas>
-                            <div class="chart-progress">
-                                <div class="progress-bar">
-                                    <div class="progress-fill" style="width: 0%; background: #e74c3c;"></div>
+                                <div class="detail-item">
+                                    <span class="detail-label">الوقت المتبقي:</span>
+                                    <span class="detail-value" id="category-remaining-time">2 ساعة 0 دقيقة</span>
                                 </div>
-                                <span class="progress-text">0% مكتمل</span>
-                            </div>
-                            <div class="chart-time-info">
-                                <span><i class="far fa-clock"></i> 0/1 ساعة</span>
-                                <span id="health-status" class="status">متاح</span>
+                                <div class="detail-item">
+                                    <span class="detail-label">النسبة المئوية:</span>
+                                    <span class="detail-value" id="category-percentage">0%</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">عدد المهام:</span>
+                                    <span class="detail-value" id="category-task-count">0</span>
+                                </div>
                             </div>
                         </div>
-                        <button class="btn-add-to-category" data-category="health">
-                            <i class="fas fa-plus"></i> إضافة مهمة لهذه الفئة
-                        </button>
                     </div>
                 </div>
             </section>
         </main>
     </div>
 
- <script src="components/taskManager.js"></script>
- <script src="components/categoryManager.js"></script>
- <script src="components/calendar.js"></script>
- <script src="components/script.js"></script>
+    <!-- ملفات JavaScript -->
+    <script src="components/taskManager.js"></script>
+    <script src="components/categoryManager.js"></script>
+    <script src="components/calendar.js"></script>
+    <script src="components/script.js"></script>
 </body>
 </html>
