@@ -1,189 +1,142 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TickTick Clone - إدارة المهام</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-</head>
-<body>
-    <div class="app-container">
-        <!-- الشريط الجانبي -->
-        <aside class="sidebar">
-            <div class="logo">
-                <i class="fas fa-tasks"></i>
-                <h2>مهامي</h2>
-            </div>
-            
-            <nav class="nav-menu">
-                <ul>
-                    <li class="active" data-view="today">
-                        <i class="fas fa-calendar-day"></i>
-                        <span>اليوم</span>
-                    </li>
-                    <li data-view="calendar">
-                        <i class="fas fa-calendar-alt"></i>
-                        <span>الجدول الزمني</span>
-                    </li>
-                    <li data-view="tasks">
-                        <i class="fas fa-list-check"></i>
-                        <span>جميع المهام</span>
-                    </li>
-                    <li data-view="charts">
-                        <i class="fas fa-chart-pie"></i>
-                        <span>الإحصائيات</span>
-                    </li>
-                </ul>
-                
-                <div class="categories">
-                    <h3>الفئات</h3>
-                    <ul id="category-list">
-                        <!-- سيتم إضافة الفئات ديناميكياً -->
-                    </ul>
-                    <button id="add-category">
-                        <i class="fas fa-plus"></i> إضافة فئة
-                    </button>
-                </div>
-            </nav>
-        </aside>
-
-        <!-- المحتوى الرئيسي -->
-        <main class="main-content">
-            <!-- شريط العنوان -->
-            <header class="top-bar">
-                <div class="date-display">
-                    <h1 id="current-date"></h1>
-                    <p id="current-time"></p>
-                </div>
-                <button id="add-task-btn" class="btn-primary">
-                    <i class="fas fa-plus"></i> إضافة مهمة
-                </button>
-            </header>
-
-            <!-- نافذة إضافة مهمة (مخفية بشكل افتراضي) -->
-            <div id="task-modal" class="modal">
-                <div class="modal-content">
-                    <h2>إضافة مهمة جديدة</h2>
-                    <form id="task-form">
-                        <input type="text" id="task-title" placeholder="عنوان المهمة" required>
-                        
-                        <div class="form-group">
-                            <label for="task-category">الفئة:</label>
-                            <select id="task-category">
-                                <option value="personal">مهام شخصية</option>
-                                <option value="work">عمل</option>
-                                <option value="study">دراسة</option>
-                                <option value="health">صحة</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="task-duration">المدة (دقائق):</label>
-                                <input type="number" id="task-duration" min="1" value="30">
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="task-time">وقت التنفيذ:</label>
-                                <input type="time" id="task-time">
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="task-repeat">التكرار:</label>
-                            <select id="task-repeat">
-                                <option value="none">لا يوجد</option>
-                                <option value="daily">يومياً</option>
-                                <option value="weekly">أسبوعياً</option>
-                                <option value="weekdays">أيام الأسبوع</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-actions">
-                            <button type="button" id="cancel-task" class="btn-secondary">إلغاء</button>
-                            <button type="submit" class="btn-primary">حفظ المهمة</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            <!-- عرض المهام -->
-            <section id="tasks-view" class="content-view active">
-                <div class="tasks-header">
-                    <h2>مهام اليوم</h2>
-                    <div class="tasks-stats">
-                        <span id="completed-count">0 مكتملة</span>
-                        <span id="total-count">0 إجمالي</span>
-                    </div>
-                </div>
-                
-                <div id="tasks-container">
-                    <!-- المهام تظهر هنا -->
-                </div>
-            </section>
-
-            <!-- الجدول الزمني -->
-            <section id="calendar-view" class="content-view">
-                <div class="calendar-header">
-                    <h2>جدول اليوم بالساعات</h2>
-                    <div class="date-navigation">
-                        <button id="prev-day"><i class="fas fa-chevron-right"></i></button>
-                        <span id="selected-date">اليوم</span>
-                        <button id="next-day"><i class="fas fa-chevron-left"></i></button>
-                    </div>
-                </div>
-                
-                <div id="time-slots">
-                    <!-- الجدول الزمني بالساعات -->
-                </div>
-            </section>
-
-            <!-- الرسوم البيانية -->
-            <section id="charts-view" class="content-view">
-                <div class="charts-header">
-                    <h2>الإحصائيات والنسب</h2>
-                    <div class="charts-controls">
-                        <select id="chart-period">
-                            <option value="today">اليوم</option>
-                            <option value="week">هذا الأسبوع</option>
-                            <option value="month">هذا الشهر</option>
-                        </select>
-                        <button id="refresh-charts"><i class="fas fa-sync-alt"></i></button>
-                    </div>
-                </div>
-                
-                <div class="charts-container">
-                    <div class="chart-card">
-                        <h3>المهام الشخصية</h3>
-                        <canvas id="personal-chart"></canvas>
-                        <div class="chart-legend" id="personal-legend"></div>
-                    </div>
-                    
-                    <div class="chart-card">
-                        <h3>توزيع المهام حسب الفئة</h3>
-                        <canvas id="category-chart"></canvas>
-                    </div>
-                    
-                    <div class="chart-card">
-                        <h3>نسبة الإنجاز</h3>
-                        <canvas id="progress-chart"></canvas>
-                    </div>
-                </div>
-                
-                <div class="categories-nav">
-                    <!-- أزرار التنقل بين الفئات -->
-                </div>
-            </section>
-        </main>
+<!-- ... بعد قسم الرسوم البيانية ... -->
+<section id="charts-view" class="content-view">
+    <div class="charts-header">
+        <h2>الإحصائيات والنسب</h2>
+        <div class="charts-controls">
+            <select id="chart-period">
+                <option value="today">اليوم</option>
+                <option value="week">هذا الأسبوع</option>
+                <option value="month">هذا الشهر</option>
+            </select>
+            <button id="settings-toggle" class="btn-secondary">
+                <i class="fas fa-cog"></i> إعدادات Charts
+            </button>
+        </div>
     </div>
-
-    <script src="script.js"></script>
-    <script src="components/taskManager.js"></script>
-    <script src="components/calendar.js"></script>
-    <script src="components/charts.js"></script>
-</body>
-</html>
+    
+    <!-- نافذة إعدادات Charts -->
+    <div id="chart-settings-modal" class="modal">
+        <div class="modal-content">
+            <h2>إعدادات Charts</h2>
+            <form id="chart-settings-form">
+                <div class="form-group">
+                    <label>اختر Chart للتعديل:</label>
+                    <select id="selected-chart">
+                        <option value="personal">المهام الشخصية</option>
+                        <option value="work">العمل</option>
+                        <option value="study">الدراسة</option>
+                        <option value="health">الصحة</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>الوقت الكلي للساعات:</label>
+                    <div class="time-input">
+                        <input type="number" id="total-hours" min="1" max="24" value="2">
+                        <span>ساعات</span>
+                        <input type="number" id="total-minutes" min="0" max="59" value="0">
+                        <span>دقائق</span>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>لون الفئة:</label>
+                    <input type="color" id="category-color" value="#4a90e2">
+                </div>
+                
+                <div class="form-group">
+                    <label>حالة الفئة:</label>
+                    <label class="switch">
+                        <input type="checkbox" id="category-enabled" checked>
+                        <span class="slider"></span>
+                    </label>
+                    <span id="status-text">مفعلة</span>
+                </div>
+                
+                <div class="current-stats">
+                    <h4>الإحصائيات الحالية:</h4>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <span class="stat-label">المستخدم:</span>
+                            <span class="stat-value" id="used-time">0 ساعة 0 دقيقة</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">المتبقي:</span>
+                            <span class="stat-value" id="remaining-time">2 ساعة 0 دقيقة</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">النسبة:</span>
+                            <span class="stat-value" id="percentage">0%</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">عدد المهام:</span>
+                            <span class="stat-value" id="task-count">0</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" id="close-settings" class="btn-secondary">إغلاق</button>
+                    <button type="submit" class="btn-primary">حفظ الإعدادات</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- شبكة Charts -->
+    <div class="charts-grid">
+        <!-- Chart للمهام الشخصية -->
+        <div class="chart-wrapper" data-category="personal">
+            <div class="chart-header">
+                <h3>المهام الشخصية</h3>
+                <button class="chart-settings-btn" data-category="personal">
+                    <i class="fas fa-cog"></i>
+                </button>
+            </div>
+            <div class="chart-container">
+                <canvas id="personal-chart"></canvas>
+                <div class="chart-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 0%; background: #4a90e2;"></div>
+                    </div>
+                    <span class="progress-text">0% مكتمل</span>
+                </div>
+                <div class="chart-time-info">
+                    <span><i class="far fa-clock"></i> 0/2 ساعة</span>
+                    <span id="personal-status" class="status-available">متاح</span>
+                </div>
+            </div>
+            <button class="btn-add-to-category" data-category="personal">
+                <i class="fas fa-plus"></i> إضافة مهمة لهذه الفئة
+            </button>
+        </div>
+        
+        <!-- Chart للعمل -->
+        <div class="chart-wrapper" data-category="work">
+            <div class="chart-header">
+                <h3>العمل</h3>
+                <button class="chart-settings-btn" data-category="work">
+                    <i class="fas fa-cog"></i>
+                </button>
+            </div>
+            <div class="chart-container">
+                <canvas id="work-chart"></canvas>
+                <div class="chart-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 0%; background: #7b68ee;"></div>
+                    </div>
+                    <span class="progress-text">0% مكتمل</span>
+                </div>
+                <div class="chart-time-info">
+                    <span><i class="far fa-clock"></i> 0/8 ساعة</span>
+                    <span id="work-status" class="status-available">متاح</span>
+                </div>
+            </div>
+            <button class="btn-add-to-category" data-category="work">
+                <i class="fas fa-plus"></i> إضافة مهمة لهذه الفئة
+            </button>
+        </div>
+        
+        <!-- أضف بقية الفئات بنفس الطريقة -->
+    </div>
+</section>
