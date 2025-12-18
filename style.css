@@ -18,7 +18,79 @@
     box-sizing: border-box;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
+/* إصلاح تنسيق Charts */
+.chart-wrapper {
+    position: relative;
+    overflow: hidden;
+}
 
+.chart-container {
+    position: relative;
+    height: 200px; /* تقليل الارتفاع */
+}
+
+.chart-progress {
+    margin-top: 15px;
+    text-align: center;
+}
+
+.progress-text {
+    font-size: 14px;
+    font-weight: bold;
+    color: #333;
+    margin-top: 5px;
+    display: block;
+}
+
+.chart-time-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    padding: 8px 0;
+    border-top: 1px solid #eee;
+    font-size: 13px;
+}
+
+.chart-time-info span:first-child {
+    color: #666;
+}
+
+.status {
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.status-available {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+}
+
+.status-full {
+    background-color: #ffebee;
+    color: #c62828;
+}
+
+.status-warning {
+    background-color: #fff3e0;
+    color: #ef6c00;
+}
+
+/* إصلاح زر الإضافة */
+.btn-add-to-category {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: all 0.3s;
+}
+
+.btn-add-to-category:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
 body {
     background-color: #f5f7fa;
     color: var(--dark-color);
