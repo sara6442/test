@@ -553,11 +553,10 @@ function refreshCurrentView() {
     else if (AppState.currentView === 'calendar') renderCalendar();
     else if (AppState.currentView === 'categories') renderCategories();
     else if (AppState.currentView === 'notes') renderNotes();
-}
-
-// توليد معرف فريد
-function generateId() {
-    return Date.now().toString() + Math.random().toString(36).substr(2, 9);
+    
+ if (typeof renderCategoriesStatus === 'function') {
+        renderCategoriesStatus();
+    }
 }
 
 // ========== إدارة المهام ==========
@@ -1355,8 +1354,11 @@ function openAddCategoryModal() {
     document.getElementById('category-modal-title').textContent = 'إضافة فئة جديدة';
     document.getElementById('category-name').value = '';
     document.getElementById('category-color').value = '#5a76e8';
+    document.getElementById('category-timeframe').value = '60';
+    document.getElementById('category-timeframe-type').value = 'minutes';
     document.getElementById('category-modal').classList.add('active');
 }
+
 
 function openEditCategoryModal(categoryId) {
     const category = AppState.categories.find(c => c.id === categoryId);
@@ -1366,12 +1368,16 @@ function openEditCategoryModal(categoryId) {
     document.getElementById('category-modal-title').textContent = 'تعديل الفئة';
     document.getElementById('category-name').value = category.name;
     document.getElementById('category-color').value = category.color;
+    document.getElementById('category-timeframe').value = category.timeframeMinutes || 60;
+    document.getElementById('category-timeframe-type').value = category.timeframeType || 'minutes';
     document.getElementById('category-modal').classList.add('active');
 }
 
 function saveCategory() {
     const name = document.getElementById('category-name').value.trim();
     const color = document.getElementById('category-color').value;
+    const timeframeMinutes = parseInt(document.getElementById('category-timeframe').value) || 60;
+    const timeframeType = document.getElementById('category-timeframe-type').value;
     
     if (!name) {
         alert('يرجى إدخال اسم الفئة');
@@ -1385,22 +1391,31 @@ function saveCategory() {
             AppState.categories[categoryIndex] = {
                 ...AppState.categories[categoryIndex],
                 name: name,
-                color: color
+                color: color,
+                timeframeMinutes: timeframeMinutes,
+                timeframeType: timeframeType
             };
             saveCategories();
             renderCategories();
+            renderCategoriesStatus(); // تحديث عرض الحالات
         }
     } else {
         // إضافة فئة جديدة
         const newCategory = {
             id: generateId(),
             name: name,
-            color: color
+            color: color,
+            timeframeMinutes: timeframeMinutes,
+            timeframeType: timeframeType,
+            messageEmpty: 'لا توجد مهام في هذه الفئة. أضف مهام جديدة لبدء العمل!',
+            messageCompleted: 'ممتاز! لقد أكملت جميع المهام في هذه الفئة.',
+            messageExceeded: 'لقد تجاوزت الوقت المخصص لهذه الفئة. حاول إدارة وقتك بشكل أفضل!'
         };
         
         AppState.categories.push(newCategory);
         saveCategories();
         renderCategories();
+        renderCategoriesStatus();
     }
     
     closeModal('category-modal');
@@ -1430,6 +1445,192 @@ function deleteCategory(categoryId) {
     saveCategories();
     renderCategories();
 }
+function calculateCategoryStatus(categoryId) {
+    const category = AppState.categories.find(c => c.id === categoryId);
+    if (!category) return null;
+    
+    const categoryTasks = AppState.tasks.filter(task => task.categoryId === categoryId);
+    
+    if (categoryTasks.length === 0) {
+        return {
+            status: 'empty',
+            message: category.messageEmpty || 'لا توجد مهام في هذه الفئة',
+            totalTasks: 0,
+            completedTasks: 0,
+            totalDuration: 0,
+            categoryTimeframe: category.timeframeMinutes || 60
+        };
+    }
+
+     const completedTasks = categoryTasks.filter(task => task.completed);
+    const totalDuration = categoryTasks.reduce((sum, task) => sum + (task.duration || 0), 0);
+    const completedDuration = completedTasks.reduce((sum, task) => sum + (task.duration || 0), 0);
+    
+    // تحويل الحيز الزمني إلى دقائق
+    let categoryTimeframeMinutes = category.timeframeMinutes || 60;
+    if (category.timeframeType === 'hours') {
+        categoryTimeframeMinutes *= 60;
+    } else if (category.timeframeType === 'days') {
+        categoryTimeframeMinutes *= 1440;
+    }
+    
+    if (completedTasks.length === categoryTasks.length) {
+        return {
+            status: 'completed',
+            message: category.messageCompleted || 'جميع المهام مكتملة',
+            totalTasks: categoryTasks.length,
+            completedTasks: completedTasks.length,
+            totalDuration: totalDuration,
+            completedDuration: completedDuration,
+            categoryTimeframe: categoryTimeframeMinutes
+        };
+    }
+    
+    if (totalDuration > categoryTimeframeMinutes) {
+        return {
+            status: 'exceeded',
+            message: category.messageExceeded || 'لقد تجاوزت الوقت المخصص لهذه الفئة',
+            totalTasks: categoryTasks.length,
+            completedTasks: completedTasks.length,
+            totalDuration: totalDuration,
+            completedDuration: completedDuration,
+            categoryTimeframe: categoryTimeframeMinutes
+        };
+    }
+    
+    return {
+        status: 'pending',
+        message: category.messagePending || 'هناك مهام معلقة في هذه الفئة',
+        totalTasks: categoryTasks.length,
+        completedTasks: completedTasks.length,
+        totalDuration: totalDuration,
+        completedDuration: completedDuration,
+        categoryTimeframe: categoryTimeframeMinutes
+    };
+}
+function renderCategoriesStatus() {
+    const container = document.querySelector('.content-area');
+    if (!container) return;
+    
+    // إضافة زر الحالات في الصفحة الرئيسية (فقط في عرض المهام)
+    if (AppState.currentView === 'tasks') {
+        const existingStatusBtn = document.getElementById('categories-status-btn');
+        if (existingStatusBtn) {
+            existingStatusBtn.remove();
+        }
+        
+        if (AppState.categories.length > 0) {
+            const statusBtn = document.createElement('button');
+            statusBtn.id = 'categories-status-btn';
+            statusBtn.className = 'btn btn-info';
+            statusBtn.style.cssText = 'margin-left: 15px; margin-bottom: 20px;';
+            statusBtn.innerHTML = '<i class="fas fa-chart-pie"></i> حالة الفئات';
+            
+            statusBtn.addEventListener('click', showCategoriesStatusModal);
+            
+            const tasksList = document.getElementById('tasks-view');
+            if (tasksList) {
+                tasksList.insertBefore(statusBtn, tasksList.firstChild);
+            }
+        }
+    }
+}
+
+// دالة لعرض نافذة حالات الفئات
+function showCategoriesStatusModal() {
+    let modalHTML = `
+        <div class="modal" id="categories-status-modal">
+            <div class="modal-content" style="max-width: 600px;">
+                <div class="modal-header">
+                    <h3>حالة الفئات</h3>
+                    <button class="close-btn" onclick="closeModal('categories-status-modal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="categories-status-container">
+    `;
+    
+    AppState.categories.forEach(category => {
+        const status = calculateCategoryStatus(category.id);
+        if (!status) return;
+        
+        let statusColor = '#6c757d';
+        let statusIcon = 'fas fa-circle';
+        
+        switch(status.status) {
+            case 'empty':
+                statusColor = '#6c757d';
+                statusIcon = 'fas fa-inbox';
+                break;
+            case 'completed':
+                statusColor = '#4cc9f0';
+                statusIcon = 'fas fa-check-circle';
+                break;
+            case 'exceeded':
+                statusColor = '#f72585';
+                statusIcon = 'fas fa-exclamation-triangle';
+                break;
+            case 'pending':
+                statusColor = '#f8961e';
+                statusIcon = 'fas fa-clock';
+                break;
+        }
+        
+        modalHTML += `
+            <div class="category-status-card" style="border-right: 4px solid ${statusColor}; margin-bottom: 15px; padding: 15px; background: var(--theme-card); border-radius: 8px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 12px; height: 12px; border-radius: 50%; background: ${status.color};"></div>
+                        <h4 style="margin: 0; color: var(--theme-text);">${category.name}</h4>
+                    </div>
+                    <i class="${statusIcon}" style="color: ${statusColor};"></i>
+                </div>
+                
+                <p style="color: ${statusColor}; margin-bottom: 10px; font-weight: 500;">
+                    ${status.message}
+                </p>
+                
+                <div style="display: flex; gap: 15px; font-size: 0.85rem; color: var(--gray-color);">
+                    <span><i class="fas fa-tasks"></i> ${status.totalTasks} مهام</span>
+                    <span><i class="fas fa-check-circle"></i> ${status.completedTasks} مكتملة</span>
+                    <span><i class="fas fa-clock"></i> ${status.totalDuration} دقيقة</span>
+                    <span><i class="fas fa-hourglass"></i> ${status.categoryTimeframe} دقيقة (حد)</span>
+                </div>
+            </div>
+        `;
+    });
+    
+    modalHTML += `
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeModal('categories-status-modal')">إغلاق</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // إضافة النافذة إلى DOM
+    const existingModal = document.getElementById('categories-status-modal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    document.getElementById('categories-status-modal').classList.add('active');
+}
+
+// إضافة دالة جديدة للإغلاق العامة
+window.closeModal = function(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.remove('active');
+        setTimeout(() => {
+            if (modal.parentNode) {
+                modal.parentNode.removeChild(modal);
+            }
+        }, 300);
+    }
+};
 
 // ========== إدارة الملاحظات ==========
 function renderNotes() {
@@ -1748,6 +1949,8 @@ function initializePage() {
     
     // إعداد محرر الملاحظات
     setupNotesEditorEvents();
+    renderCategoriesStatus();
+
     
     // ========== أحداث التنقل ==========
     document.querySelectorAll('.nav-item').forEach(item => {
