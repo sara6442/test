@@ -39,79 +39,41 @@ body {
     --theme-card: white;
     --theme-border: #dee2e6;
     --theme-primary: #6c757d;
-    --theme-hover: #5a6268;[
+    --theme-hover: #5a6268;
 }
 
 /* ========== الثيمات ========== */
 .theme-black {
     --theme-bg: #121212;
-    --theme-sidebar: linear-gradient(180deg, #1a1a1a, #2d2d2d);
-    --theme-text: #f0f0f0;
+    --theme-sidebar: linear-gradient(180deg, #1e1e1e, #2d2d2d);
+    --theme-text: #f0f0f0; /* تغيير من #e0e0e0 إلى #f0f0f0 ليكون أفتح */
     --theme-card: #1e1e1e;
     --theme-border: #333333;
-    --theme-primary: #4a4a4a;
-    --theme-hover: #555555;
-    --input-text: #ffffff; /* إضافة لون جديد لنص الإدخال */
+    --theme-primary: #555555; /* جعل الأزرار أفتح */
+    --theme-hover: #666666;
 }
 
-/* ========== تعديلات الثيم الأسود ========== */
-.theme-black .modal-content {
-    background-color: #1e1e1e;
-    color: #f0f0f0;
-}
-
-.theme-black .modal-header h3 {
-    color: #1e1e1e;
-}
-
-/* ========== تنسيقات الإدخال في الثيم الأسود ========== */
-.theme-black input,
-.theme-black select,
-.theme-black textarea,
-.theme-black .form-group input,
-.theme-black .form-group select,
-.theme-black .form-group textarea,
-.theme-black .notes-title-input,
-.theme-black .font-select,
-.theme-black .font-size-input,
-.theme-black .font-weight-select,
-.theme-black .font-style-select {
-    background-color: #2d2d2d !important;
-    color: #ffffff !important; /* تغيير من #f0f0f0 إلى #ffffff */
-    border-color: #444444 !important;
-}
-
-/* إعادة تلوين placeholder */
-.theme-black input::placeholder,
-.theme-black textarea::placeholder {
-    color: #aaaaaa !important;
-}
-
-/* ========== النصوص في الملاحظات ========== */
-.theme-black .note-title {
-    color: #ffffff !important;
-}
-
+/* ========== الملاحظات في الثيم الأسود ========== */
 .theme-black .note-content {
-    color: #f0f0f0 !important;
-    background-color: #1e1e1e !important;
+    color: #f0f0f0 !important; /* إجبار اللون الأبيض الفاتح */
 }
 
 .theme-black .note-checkbox-text {
-    color: #f0f0f0 !important;
+    color: #f0f0f0 !important; /* إجبار لون النص في checkboxes */
 }
 
-/* ========== الحقول الأخرى ========== */
-.theme-black .task-title {
-    color: #ffffff !important;
+.theme-black .note-title {
+    color: #ffffff !important; /* جعل عنوان الملاحظة أبيض بالكامل */
 }
 
-.theme-black .task-description {
-    color: #cccccc !important;
-}
-
-.theme-black .category-name {
-    color: #ffffff !important;
+/* ========== النصوص في الثيم الأسود ========== */
+.theme-black .task-description,
+.theme-black .task-meta,
+.theme-black .category-stats,
+.theme-black .category-progress-info,
+.theme-black .note-date,
+.theme-black .note-font {
+    color: #b0b0b0 !important; /* جعل النصوص الثانوية أفتح */
 }
 
 /* ========== محرر الملاحظات في الثيم الأسود ========== */
@@ -124,33 +86,45 @@ body {
     color: #ffffff !important;
 }
 
-/* ========== التأكد من ظهور النص الأبيض في جميع الحقول ========== */
-.theme-black #task-title,
-.theme-black #task-description,
-.theme-black #edit-task-title,
-.theme-black #edit-task-description,
-.theme-black #category-name,
-.theme-black .note-checkbox-text,
-.theme-black .task-meta span,
-.theme-black .category-progress-info span,
-.theme-black .note-date,
-.theme-black .note-font,
-.theme-black .calendar-task-title,
-.theme-black .calendar-task-meta span,
-.theme-black .note-card .note-title {
+/* ========== التلميحات في الثيم الأسود ========== */
+.theme-black .tooltip {
+    background-color: #2d2d2d !important;
+    color: #f0f0f0 !important;
+    border-color: #444444 !important;
+}
+
+.theme-black .tooltip-title {
     color: #ffffff !important;
 }
 
-/* ========== نصوص التاريخ والملاحظات ========== */
-.theme-black #current-date,
-.theme-black .current-date,
-.theme-black .form-group label,
-.theme-black .modal-header h3,
-.theme-black .notes-title-input,
-.theme-black .note-title {
+/* ========== النوافذ المنبثقة في الثيم الأسود ========== */
+.theme-black .modal-content {
+    background-color: #1e1e1e !important;
+    color: #f0f0f0 !important;
+}
+
+.theme-black .modal-header h3 {
     color: #ffffff !important;
 }
 
+.theme-black .form-group label {
+    color: #f0f0f0 !important;
+}
+
+.theme-black .form-group input,
+.theme-black .form-group select,
+.theme-black .form-group textarea {
+    background-color: #2d2d2d !important;
+    color: #f0f0f0 !important;
+    border-color: #444444 !important;
+}
+
+.theme-black .form-group input:focus,
+.theme-black .form-group select:focus,
+.theme-black .form-group textarea:focus {
+    border-color: #555555 !important;
+    box-shadow: 0 0 0 3px rgba(85, 85, 85, 0.1) !important;
+}
 
 .theme-blue {
     --theme-bg: #f0f7ff;
@@ -335,18 +309,6 @@ body {
 .btn-sm { padding: 8px 16px; font-size: 0.9rem; border-radius: 8px; }
 .btn-xs { padding: 4px 10px; font-size: 0.8rem; border-radius: 6px; }
 
-/* ========== زر حالة الفئات ========== */
-.btn-info {
-    background: linear-gradient(135deg, #4cc9f0, #3ab5e0);
-    color: white;
-    border: none;
-}
-
-.btn-info:hover {
-    background: linear-gradient(135deg, #3ab5e0, #2a9ec8);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(76, 201, 240, 0.3);
-}
 /* ========== منطقة المحتوى ========== */
 .content-area {
     background: var(--theme-card);
@@ -489,23 +451,6 @@ body {
 
 .category-task-title { font-weight: 500; margin-bottom: 5px; font-size: 0.95rem; display: flex; align-items: center; gap: 8px; }
 .category-task-meta { display: flex; gap: 12px; font-size: 0.85rem; color: var(--gray-color); }
-
-/* ========== نمط نافذة حالة الفئات ========== */
-.categories-status-container {
-    max-height: 400px;
-    overflow-y: auto;
-    padding-right: 10px;
-}
-
-.category-status-card {
-    transition: var(--transition);
-    border: 1px solid var(--theme-border);
-}
-
-.category-status-card:hover {
-    transform: translateX(-5px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
 
 /* ========== عرض الملاحظات ========== */
 .notes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px; margin-top: 25px; }
@@ -903,5 +848,3 @@ body {
 ::-webkit-scrollbar-track { background: var(--theme-card); border-radius: 10px; }
 ::-webkit-scrollbar-thumb { background: var(--theme-primary); border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--theme-hover); }
-
-اريد الbackground يكون لونه رمادي غامق بدل ابيض، واريد ان يكون القيم الافتراضي بيج
