@@ -292,37 +292,37 @@ function initializeData() {
         
         if (!Array.isArray(AppState.categories) || AppState.categories.length === 0) {
             AppState.categories = [
-                { 
-                    id: 'work', 
-                    name: 'عمل', 
-                    color: '#5a76e8',
-                    timeframe: 'daily',
-                    messageEmpty: 'لا توجد مهام في فئة العمل اليوم. أضف مهام جديدة لبدء العمل!',
-                    messageCompleted: 'ممتاز! لقد أكملت جميع مهام العمل لهذا اليوم. استمر في العمل الجيد!',
-                    messagePending: 'هناك مهام عمل معلقة. واصل العمل لإنجازها!',
-                    customDays: 0
-                },
-                { 
-                    id: 'personal', 
-                    name: 'شخصي', 
-                    color: '#4cc9f0',
-                    timeframe: 'weekly',
-                    messageEmpty: 'لا توجد مهام شخصية هذا الأسبوع. يمكنك إضافة مهام جديدة!',
-                    messageCompleted: 'رائع! لقد أكملت جميع المهام الشخصية لهذا الأسبوع.',
-                    messagePending: 'لا يزال لديك مهام شخصية معلقة. حاول إنجازها قريباً!',
-                    customDays: 0
-                },
-                { 
-                    id: 'study', 
-                    name: 'دراسة', 
-                    color: '#f72585',
-                    timeframe: 'monthly',
-                    messageEmpty: 'لا توجد مهام دراسية لهذا الشهر. خطط لجدولك الدراسي!',
-                    messageCompleted: 'تهانينا! لقد أنجزت جميع المهام الدراسية لهذا الشهر.',
-                    messagePending: 'هناك مهام دراسية تحتاج للإنجاز. ركز على دراستك!',
-                    customDays: 0
-                }
-            ];
+    { 
+        id: 'work', 
+        name: 'عمل', 
+        color: '#5a76e8',
+        timeframeMinutes: 480, // 8 ساعات
+        timeframeType: 'minutes',
+        messageEmpty: 'لا توجد مهام في فئة العمل اليوم. أضف مهام جديدة لبدء العمل!',
+        messageCompleted: 'ممتاز! لقد أكملت جميع مهام العمل لهذا اليوم. استمر في العمل الجيد!',
+        messageExceeded: 'لقد تجاوزت الوقت المخصص للعمل اليوم. حاول إدارة وقتك بشكل أفضل!'
+    },
+    { 
+        id: 'personal', 
+        name: 'شخصي', 
+        color: '#4cc9f0',
+        timeframeMinutes: 120, // 2 ساعة
+        timeframeType: 'minutes',
+        messageEmpty: 'لا توجد مهام شخصية هذا الأسبوع. يمكنك إضافة مهام جديدة!',
+        messageCompleted: 'رائع! لقد أكملت جميع المهام الشخصية لهذا الأسبوع.',
+        messageExceeded: 'لقد تجاوزت الوقت المخصص للمهام الشخصية. حاول التركيز على المهام المهمة!'
+    },
+    { 
+        id: 'study', 
+        name: 'دراسة', 
+        color: '#f72585',
+        timeframeMinutes: 360, // 6 ساعات
+        timeframeType: 'minutes',
+        messageEmpty: 'لا توجد مهام دراسية لهذا الشهر. خطط لجدولك الدراسي!',
+        messageCompleted: 'تهانينا! لقد أنجزت جميع المهام الدراسية لهذا الشهر.',
+        messageExceeded: 'لقد تجاوزت الوقت المخصص للدراسة. حاول تنظيم وقتك بشكل أفضل!'
+    }
+];
             saveCategories();
         }
     } catch (e) {
