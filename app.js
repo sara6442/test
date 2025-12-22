@@ -2010,69 +2010,111 @@ function openNoteEditor(noteId) {
 }
 
 function setupNotesEditorEvents() {
+    // ✅ **إضافة تحقق من وجود العناصر قبل إضافة الأحداث**
+    const saveNotesBtn = document.getElementById('save-notes-btn');
+    const closeNotesBtn = document.getElementById('close-notes-btn');
+    const addCheckboxBtn = document.getElementById('add-checkbox-btn');
+    const fontFamilySelect = document.getElementById('notes-font-family');
+    const fontSizeSelect = document.getElementById('notes-font-size');
+    const fontWeightSelect = document.getElementById('notes-font-weight');
+    const fontStyleSelect = document.getElementById('notes-font-style');
+    const fontColorSelect = document.getElementById('notes-font-color');
+    
+    // التحقق من وجود كل العناصر المطلوبة
+    if (!saveNotesBtn || !closeNotesBtn || !addCheckboxBtn) {
+        console.warn('⚠️ بعض عناصر محرر الملاحظات غير موجودة في DOM');
+        return; // الخروج من الدالة إذا لم تكن العناصر موجودة
+    }
+    
     // حفظ الملاحظات
-    document.getElementById('save-notes-btn').addEventListener('click', saveNote);
+    saveNotesBtn.addEventListener('click', saveNote);
     
     // إغلاق المحرر
-    document.getElementById('close-notes-btn').addEventListener('click', () => {
-        document.getElementById('notes-editor').classList.remove('active');
+    closeNotesBtn.addEventListener('click', () => {
+        const notesEditor = document.getElementById('notes-editor');
+        if (notesEditor) {
+            notesEditor.classList.remove('active');
+        }
     });
     
     // زر إضافة خانة اختيار
-    document.getElementById('add-checkbox-btn').addEventListener('click', () => {
+    addCheckboxBtn.addEventListener('click', () => {
         const editor = document.getElementById('notes-editor-content');
+        if (!editor) return;
+        
         const checkboxHtml = `<div class="note-checkbox-item"><input type="checkbox" class="note-checkbox"> <span class="note-checkbox-text" contenteditable="true">عنصر جديد</span></div>`;
         
         // إدراج HTML في المحرر
         const selection = window.getSelection();
-        const range = selection.getRangeAt(0);
-        const div = document.createElement('div');
-        div.innerHTML = checkboxHtml;
-        const frag = document.createDocumentFragment();
-        let node;
-        while ((node = div.firstChild)) {
-            frag.appendChild(node);
+        if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            const div = document.createElement('div');
+            div.innerHTML = checkboxHtml;
+            const frag = document.createDocumentFragment();
+            let node;
+            while ((node = div.firstChild)) {
+                frag.appendChild(node);
+            }
+            range.insertNode(frag);
+            
+            // نقل المؤشر إلى نهاية العنصر المدرج
+            range.setStartAfter(frag.lastChild);
+            range.setEndAfter(frag.lastChild);
+            selection.removeAllRanges();
+            selection.addRange(range);
+        } else {
+            // إذا لم يكن هناك نطاق محدد، نضيف في النهاية
+            editor.insertAdjacentHTML('beforeend', checkboxHtml);
         }
-        range.insertNode(frag);
-        
-        // نقل المؤشر إلى نهاية العنصر المدرج
-        range.setStartAfter(frag.lastChild);
-        range.setEndAfter(frag.lastChild);
-        selection.removeAllRanges();
-        selection.addRange(range);
     });
     
     // أدوات التنسيق
     document.querySelectorAll('.format-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             const command = this.dataset.command;
-            document.execCommand(command, false, null);
-            this.classList.toggle('active');
+            if (command) {
+                document.execCommand(command, false, null);
+                this.classList.toggle('active');
+            }
         });
     });
     
-    // إعدادات الخط
-    document.getElementById('notes-font-family').addEventListener('change', function() {
-        document.execCommand('fontName', false, this.value);
-    });
+    // إعدادات الخط (بعد التحقق من وجود العناصر)
+    if (fontFamilySelect) {
+        fontFamilySelect.addEventListener('change', function() {
+            document.execCommand('fontName', false, this.value);
+        });
+    }
     
-    document.getElementById('notes-font-size').addEventListener('change', function() {
-        document.execCommand('fontSize', false, this.value);
-    });
+    if (fontSizeSelect) {
+        fontSizeSelect.addEventListener('change', function() {
+            document.execCommand('fontSize', false, this.value);
+        });
+    }
     
-    document.getElementById('notes-font-weight').addEventListener('change', function() {
-        const editor = document.getElementById('notes-editor-content');
-        editor.style.fontWeight = this.value;
-    });
+    if (fontWeightSelect) {
+        fontWeightSelect.addEventListener('change', function() {
+            const editor = document.getElementById('notes-editor-content');
+            if (editor) {
+                editor.style.fontWeight = this.value;
+            }
+        });
+    }
     
-    document.getElementById('notes-font-style').addEventListener('change', function() {
-        const editor = document.getElementById('notes-editor-content');
-        editor.style.fontStyle = this.value;
-    });
+    if (fontStyleSelect) {
+        fontStyleSelect.addEventListener('change', function() {
+            const editor = document.getElementById('notes-editor-content');
+            if (editor) {
+                editor.style.fontStyle = this.value;
+            }
+        });
+    }
     
-    document.getElementById('notes-font-color').addEventListener('change', function() {
-        document.execCommand('foreColor', false, this.value);
-    });
+    if (fontColorSelect) {
+        fontColorSelect.addEventListener('change', function() {
+            document.execCommand('foreColor', false, this.value);
+        });
+    }
 }
 
 function saveNote() {
@@ -2116,14 +2158,28 @@ function switchView(viewName) {
         categories: 'الفئات',
         notes: 'الملاحظات'
     };
-    document.getElementById('page-title').textContent = titles[viewName] || viewName;
+    const pageTitle = document.getElementById('page-title');
+    if (pageTitle) {
+        pageTitle.textContent = titles[viewName] || viewName;
+    }
     
     document.querySelectorAll('.view').forEach(view => {
         view.classList.remove('active');
     });
-    document.getElementById(`${viewName}-view`).classList.add('active');
+    const targetView = document.getElementById(`${viewName}-view`);
+    if (targetView) {
+        targetView.classList.add('active');
+    }
     
-    refreshCurrentView();
+    // ✅ **إعادة تهيئة محرر الملاحظات فقط عند التبديل إلى عرض الملاحظات**
+    if (viewName === 'notes') {
+        setTimeout(() => {
+            setupNotesEditorEvents();
+            renderNotes();
+        }, 50);
+    } else {
+        refreshCurrentView();
+    }
 }
 
 function setFilter(filterName) {
@@ -2149,15 +2205,16 @@ function initializePage() {
         month: 'long',
         day: 'numeric'
     });
-    document.getElementById('current-date').textContent = arabicDate;
+    const currentDateElement = document.getElementById('current-date');
+    if (currentDateElement) {
+        currentDateElement.textContent = arabicDate;
+    }
     
     // تحميل البيانات
     initializeData();
-    initializeThemes();
-    
-    // إعداد محرر الملاحظات
-    setupNotesEditorEvents();
+    initializeThemes();    
     renderCategoriesStatus();
+    
 
     
     // ========== أحداث التنقل ==========
@@ -2349,9 +2406,26 @@ function initializePage() {
     });
     
     // ========== تحميل العرض الأولي ==========
-    renderTasks();
-    console.log("✅ التطبيق جاهز للاستخدام!");
-}
+   renderTasks();
+console.log("✅ التطبيق جاهز للاستخدام!");
+
+// ✅ **تأخير تهيئة بعض الأحداث حتى يتم تحميل كل شيء**
+setTimeout(() => {
+    // إعادة تهيئة الفلاتر
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    if (filterButtons.length > 0) {
+        filterButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                setFilter(this.dataset.filter);
+            });
+        });
+    }
+    
+    // إذا كنا في عرض الملاحظات من البداية (ممكن في حالة refresh)
+    if (AppState.currentView === 'notes') {
+        setupNotesEditorEvents();
+    }
+}, 100);
 
 function openAddTaskModal(preselectedCategory = null) {
     const categorySelect = document.getElementById('task-category');
