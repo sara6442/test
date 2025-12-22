@@ -939,9 +939,11 @@ function renderTasks() {
                 html += `
                     <div class="task-card ${task.completed ? 'completed' : ''} ${isOverdue ? 'overdue' : ''}" 
                          data-id="${task.id}">
-                        <div class="task-overdue-badge" style="${isOverdue ? 'display: block;' : 'display: none;'}">
+                        ${isOverdue ? `
+                        <div class="task-overdue-badge" style="position: absolute; top: 10px; left: 10px; background: var(--danger-color); color: white; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 500;">
                             <i class="fas fa-exclamation-circle"></i> متأخرة
                         </div>
+                        ` : ''}
                         <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''}>
                     <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''}>
                     <div class="task-content">
