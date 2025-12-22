@@ -3119,11 +3119,8 @@ function openAddTaskModal(preselectedCategory = null) {
         dateInput.value = today;
     }
     
-    // ✅ **التحقق من وجود النافذة قبل إضافة class**
-    const modal = document.getElementById('add-task-modal');
-    if (modal) {
-        modal.classList.add('active');
-    }
+    // ✅ **فقط استخدم المتغير الموجود**
+    modal.classList.add('active'); // ⚠️ إزالة const modal الثانية
     
     const titleInput = document.getElementById('task-title');
     if (titleInput) {
@@ -3132,6 +3129,7 @@ function openAddTaskModal(preselectedCategory = null) {
         }, 100);
     }
 }
+
 
 function closeModal(modalId) {
     const modal = document.getElementById(modalId);
