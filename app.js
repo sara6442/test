@@ -818,11 +818,18 @@ function renderTasks() {
     const container = document.getElementById('tasks-list');
     const tasksView = document.getElementById('tasks-view');
     
+    // ✅ **التحقق من وجود الحاويات**
+    if (!container || !tasksView) {
+        console.error('عناصر عرض المهام غير موجودة');
+        return;
+    }
+    
     // تنظيف الحاوية أولاً
     container.innerHTML = '';
     
-    // إعداد الفلاتر إذا لم تكن موجودة
+    // ✅ **إضافة تحقق إضافي لمنع التكرار**
     if (tasksView && !tasksView.querySelector('.tasks-filters-container')) {
+        console.log('إعداد الفلاتر الرئيسية...');
         setupMainPageFilters();
     }
     
@@ -1049,13 +1056,13 @@ function renderDailyCalendar(container) {
     
     let html = `
         <div class="calendar-nav" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <button class="btn btn-secondary btn-sm" onclick="changeCalendarDate(-1)">
+            <button class="btn btn-secondary btn-sm prev-day-btn" data-change="-1">
                 <i class="fas fa-chevron-right"></i> أمس
             </button>
             <h3 style="margin: 0 15px; text-align: center; color: var(--theme-text);">
                 ${date.toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             </h3>
-            <button class="btn btn-secondary btn-sm" onclick="changeCalendarDate(1)">
+            <button class="btn btn-secondary btn-sm next-day-btn" data-change="1">
                 غداً <i class="fas fa-chevron-left"></i>
             </button>
         </div>
@@ -1136,10 +1143,30 @@ function renderDailyCalendar(container) {
     }
     
     html += '</div>';
+     
     container.innerHTML = html;
     
+    // ✅ **إضافة الأحداث بعد إضافة HTML إلى DOM**
     setTimeout(() => {
         setupCalendarTooltips();
+        
+        // إضافة أحداث لأزرار التنقل
+        const prevBtn = container.querySelector('.prev-day-btn');
+        const nextBtn = container.querySelector('.next-day-btn');
+        
+        if (prevBtn) {
+            prevBtn.addEventListener('click', () => {
+                const change = parseInt(prevBtn.dataset.change);
+                changeCalendarDate(change);
+            });
+        }
+        
+        if (nextBtn) {
+            nextBtn.addEventListener('click', () => {
+                const change = parseInt(nextBtn.dataset.change);
+                changeCalendarDate(change);
+            });
+        }
     }, 100);
 }
 
@@ -1983,18 +2010,39 @@ function deleteNote(noteId) {
 
 function openNoteEditor(noteId) {
     const note = AppState.notes.find(n => n.id === noteId);
-    if (!note) return;
+    if (!note) {
+        console.error('الملاحظة غير موجودة:', noteId);
+        return;
+    }
     
     AppState.currentNoteId = noteId;
     
-    document.getElementById('notes-editor-title').value = note.title;
-    document.getElementById('notes-font-family').value = note.fontFamily;
-    document.getElementById('notes-font-size').value = note.fontSize;
-    document.getElementById('notes-font-weight').value = note.fontWeight;
-    document.getElementById('notes-font-style').value = note.fontStyle;
-    document.getElementById('notes-font-color').value = note.color;
-    
+    // ✅ **التحقق من وجود كل عنصر**
+    const editorTitle = document.getElementById('notes-editor-title');
     const editor = document.getElementById('notes-editor-content');
+    const modal = document.getElementById('notes-editor');
+    
+    if (!editorTitle || !editor || !modal) {
+        console.error('عناصر محرر الملاحظات غير موجودة');
+        return;
+    }
+    
+    editorTitle.value = note.title;
+    
+    // تحديث عناصر التحكم
+    const fontFamilySelect = document.getElementById('notes-font-family');
+    const fontSizeSelect = document.getElementById('notes-font-size');
+    const fontWeightSelect = document.getElementById('notes-font-weight');
+    const fontStyleSelect = document.getElementById('notes-font-style');
+    const fontColorSelect = document.getElementById('notes-font-color');
+    
+    if (fontFamilySelect) fontFamilySelect.value = note.fontFamily;
+    if (fontSizeSelect) fontSizeSelect.value = note.fontSize;
+    if (fontWeightSelect) fontWeightSelect.value = note.fontWeight;
+    if (fontStyleSelect) fontStyleSelect.value = note.fontStyle;
+    if (fontColorSelect) fontColorSelect.value = note.color;
+    
+    // تحديث المحرر
     editor.innerHTML = note.content || '';
     editor.style.fontFamily = note.fontFamily;
     editor.style.fontSize = note.fontSize + 'px';
@@ -2002,10 +2050,14 @@ function openNoteEditor(noteId) {
     editor.style.fontStyle = note.fontStyle;
     editor.style.color = note.color;
     
-    document.getElementById('notes-editor').classList.add('active');
+    // فتح النافذة
+    modal.classList.add('active');
     
     setTimeout(() => {
         editor.focus();
+        
+        // ✅ **إعادة تهيئة أحداث المحرر بعد فتحه**
+        setupNotesEditorEvents();
     }, 100);
 }
 
@@ -2427,8 +2479,16 @@ setTimeout(() => {
     }
 }, 100);
 }
+
 function openAddTaskModal(preselectedCategory = null) {
     const categorySelect = document.getElementById('task-category');
+    
+    // ✅ **التحقق من وجود العنصر أولاً**
+    if (!categorySelect) {
+        console.error('عنصر task-category غير موجود');
+        return;
+    }
+    
     categorySelect.innerHTML = '<option value="">-- اختر الفئة --</option>';
     
     AppState.categories.forEach(category => {
@@ -2447,7 +2507,11 @@ function openAddTaskModal(preselectedCategory = null) {
         dateInput.value = today;
     }
     
-    document.getElementById('add-task-modal').classList.add('active');
+    // ✅ **التحقق من وجود النافذة قبل إضافة class**
+    const modal = document.getElementById('add-task-modal');
+    if (modal) {
+        modal.classList.add('active');
+    }
     
     const titleInput = document.getElementById('task-title');
     if (titleInput) {
@@ -2464,6 +2528,13 @@ function closeModal(modalId) {
     }
 }
 
+window.changeCalendarDate = function(change) {
+    AppState.currentCalendarDate = new Date(
+        AppState.currentCalendarDate.getTime() + change * 24 * 60 * 60 * 1000
+    );
+    renderCalendar();
+};
+
 // جعل الوظائف متاحة عالمياً
 window.openEditTaskModal = openEditTaskModal;
 window.openAddTaskModal = openAddTaskModal;
@@ -2471,6 +2542,6 @@ window.openEditCategoryModal = openEditCategoryModal;
 window.updateNoteTitle = updateNoteTitle;
 window.openNoteEditor = openNoteEditor;
 window.toggleTaskCompletion = toggleTaskCompletion;
-
-// بدء التطبيق عند تحميل الصفحة
+window.renderTasks = renderTasks;
+window.renderCalendar = renderCalendar;
 document.addEventListener('DOMContentLoaded', initializePage);
