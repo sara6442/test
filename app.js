@@ -687,6 +687,13 @@ function refreshCurrentView() {
 // ========== إدارة المهام ==========
 function addTask(taskData) {
     console.log("إضافة مهمة:", taskData);
+    
+    // التحقق من الحيز الزمني للفئة
+    if (isCategoryFull(taskData.categoryId)) {
+        showCategoryFullOptions(taskData.categoryId, taskData);
+        return;
+    }
+    
     const newTask = {
         id: generateId(),
         title: taskData.title,
@@ -700,12 +707,13 @@ function addTask(taskData) {
         createdAt: new Date().toISOString()
     };
     
+    UndoRedoManager.saveState('إضافة مهمة');
     AppState.tasks.push(newTask);
     saveTasks();
     refreshCurrentView();
     
     closeModal('add-task-modal');
-    document.getElementById('task-form').reset();
+    document.getElementById('task-form')?.reset();
 }
 
 function updateTask(taskId, taskData) {
@@ -928,9 +936,13 @@ function renderTasks() {
                 </div>
             `;
         } else {
-            html += `
-                <div class="task-card ${task.completed ? 'completed' : ''} ${isOverdue ? 'overdue' : ''}" 
-                     data-id="${task.id}">
+                html += `
+                    <div class="task-card ${task.completed ? 'completed' : ''} ${isOverdue ? 'overdue' : ''}" 
+                         data-id="${task.id}">
+                        <div class="task-overdue-badge" style="${isOverdue ? 'display: block;' : 'display: none;'}">
+                            <i class="fas fa-exclamation-circle"></i> متأخرة
+                        </div>
+                        <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''}>
                     <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''}>
                     <div class="task-content">
                         <div class="task-title">${task.title}</div>
@@ -1079,14 +1091,14 @@ function renderDailyCalendar(container) {
         `;
     } else {
         const timeSlots = [
-            { start: '00:00', end: '04:00', label: 'ليل (12-4 ص)' },
-            { start: '04:00', end: '06:00', label: 'فجر (4-6 ص)' },
-            { start: '06:00', end: '12:00', label: 'صباح (6-12 ص)' },
-            { start: '12:00', end: '16:00', label: 'ظهر (12-4 م)' },
-            { start: '16:00', end: '18:00', label: 'عصر (4-6 م)' },
-            { start: '18:00', end: '19:00', label: 'مساء (6-7 م)' },
-            { start: '19:00', end: '24:00', label: 'ليل (8-12 م)' }
-        ];
+                { start: '00:00', end: '04:00', label: 'منتصف الليل (12-4 ص)' },
+                { start: '04:00', end: '06:00', label: 'الفجر (4-6 ص)' },
+                { start: '06:00', end: '12:00', label: 'الصباح (6-12 ص)' },
+                { start: '12:00', end: '15:00', label: 'الظهر (12-3 م)' },
+                { start: '15:00', end: '18:00', label: 'العصر (3-6 م)' },
+                { start: '18:00', end: '19:00', label: 'المغرب (6-7 م)' },
+                { start: '19:00', end: '24:00', label: 'العشاء (7-12 م)' }
+            ];
         
         timeSlots.forEach(slot => {
             const slotTasks = tasksForDay.filter(task => {
@@ -1394,6 +1406,52 @@ Date.prototype.getWeekNumber = function() {
     const week1 = new Date(date.getFullYear(), 0, 4);
     return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
 };
+
+function setupCalendarTooltips() {
+    document.querySelectorAll('.calendar-task-card, .month-task-item').forEach(card => {
+        const taskId = card.dataset.id;
+        const task = AppState.tasks.find(t => t.id === taskId) || 
+                    AppState.deletedTasks.find(t => t.id === taskId);
+        
+        if (!task) return;
+        
+        const category = getCategoryById(task.categoryId);
+        
+        card.addEventListener('mouseenter', (e) => {
+            const tooltip = document.getElementById('global-tooltip');
+            if (!tooltip) return;
+            
+            tooltip.innerHTML = `
+                <div class="tooltip-title">${task.title}</div>
+                ${task.description ? `<div class="tooltip-desc">${task.description}</div>` : ''}
+                <div class="tooltip-meta">
+                    <div><i class="fas fa-tag" style="color: ${category.color}"></i> ${category.name}</div>
+                    <div><i class="fas fa-calendar"></i> ${formatDate(task.date)}</div>
+                    <div><i class="fas fa-clock"></i> ${task.time || 'بدون وقت'}</div>
+                    <div><i class="fas fa-stopwatch"></i> ${task.duration} دقيقة</div>
+                    <div><i class="fas fa-flag" style="color: ${task.priority === 'high' ? '#f72585' : 
+                        task.priority === 'medium' ? '#f8961e' : '#4cc9f0'}"></i> 
+                        ${task.priority === 'high' ? 'عالية' : task.priority === 'medium' ? 'متوسطة' : 'منخفضة'}
+                    </div>
+                </div>
+                <div class="tooltip-hint">انقر للتعديل</div>
+            `;
+            
+            tooltip.style.left = e.pageX + 10 + 'px';
+            tooltip.style.top = e.pageY + 10 + 'px';
+            tooltip.style.display = 'block';
+        });
+        
+        card.addEventListener('mouseleave', () => {
+            const tooltip = document.getElementById('global-tooltip');
+            if (tooltip) tooltip.style.display = 'none';
+        });
+        
+        card.addEventListener('click', () => {
+            openEditTaskModal(taskId);
+        });
+    });
+}
 
 // ========== إدارة الفئات ==========
 function renderCategories() {
@@ -1720,14 +1778,20 @@ function setupMainPageFilters() {
     const tasksView = document.getElementById('tasks-view');
     if (!tasksView) return;
     
-    // إنشاء حاوية جديدة للفلاتر وحالة الفئات
+    // التحقق من عدم وجود الفلاتر مسبقاً
+    if (tasksView.querySelector('.tasks-filters-container')) return;
+    
+    // إنشاء حاوية جديدة للفلاتر فوق المهام
+    const contentArea = tasksView.querySelector('.content-area') || tasksView;
+    
     const filtersContainer = document.createElement('div');
+    filtersContainer.className = 'tasks-filters-container';
     filtersContainer.style.cssText = `
         display: flex;
-        flex-direction: column;
-        gap: 15px;
-        margin: 20px 0;
-        padding: 20px;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding: 15px 20px;
         background: var(--theme-card);
         border-radius: var(--border-radius);
         border: 1px solid var(--theme-border);
@@ -1736,7 +1800,7 @@ function setupMainPageFilters() {
     
     // قسم الفلاتر
     const filtersSection = document.createElement('div');
-    filtersSection.style.cssText = 'display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;';
+    filtersSection.style.cssText = 'display: flex; gap: 10px; flex-wrap: wrap;';
     filtersSection.innerHTML = `
         <button class="filter-btn active" data-filter="pending">المهام النشطة</button>
         <button class="filter-btn" data-filter="completed">المكتملة</button>
@@ -1747,7 +1811,7 @@ function setupMainPageFilters() {
     
     // قسم حالة الفئات
     const statusSection = document.createElement('div');
-    statusSection.style.cssText = 'display: flex; justify-content: flex-end;';
+    statusSection.style.cssText = 'display: flex; gap: 10px; align-items: center;';
     
     // زر حالة الفئات
     const statusBtn = document.createElement('button');
@@ -1756,18 +1820,25 @@ function setupMainPageFilters() {
     statusBtn.innerHTML = '<i class="fas fa-chart-pie"></i> حالة الفئات';
     statusBtn.addEventListener('click', showCategoriesStatusModal);
     
+    // زر إضافة مهمة جديد (جانب زر حالة الفئات)
+    const addTaskBtn = document.createElement('button');
+    addTaskBtn.className = 'btn btn-primary';
+    addTaskBtn.innerHTML = '<i class="fas fa-plus"></i> إضافة مهمة';
+    addTaskBtn.addEventListener('click', () => openAddTaskModal());
+    
     statusSection.appendChild(statusBtn);
+    statusSection.appendChild(addTaskBtn);
     
     // إضافة الأقسام إلى الحاوية
     filtersContainer.appendChild(filtersSection);
     filtersContainer.appendChild(statusSection);
     
-    // البحث عن موقع إدراج مناسب بعد الهيدر
-    const header = tasksView.querySelector('.header') || tasksView.previousElementSibling;
-    if (header && header.nextSibling) {
-        header.parentNode.insertBefore(filtersContainer, header.nextSibling);
-    } else if (header) {
-        header.parentNode.appendChild(filtersContainer);
+    // إدراج الفلاتر قبل قائمة المهام مباشرة
+    const tasksList = contentArea.querySelector('#tasks-list');
+    if (tasksList) {
+        contentArea.insertBefore(filtersContainer, tasksList);
+    } else {
+        contentArea.prepend(filtersContainer);
     }
 }
 
@@ -1867,6 +1938,75 @@ window.closeModal = function(modalId) {
     }
 };
 
+function isCategoryFull(categoryId) {
+    const category = AppState.categories.find(c => c.id === categoryId);
+    if (!category || !category.timeframeMinutes) return false;
+    
+    const categoryTasks = AppState.tasks.filter(task => task.categoryId === categoryId);
+    const totalDuration = categoryTasks.reduce((sum, task) => sum + (task.duration || 0), 0);
+    
+    return totalDuration >= category.timeframeMinutes;
+}
+
+function showCategoryFullOptions(categoryId, taskData) {
+    const modalHTML = `
+        <div class="modal" id="category-full-modal">
+            <div class="modal-content" style="max-width: 500px;">
+                <div class="modal-header">
+                    <h3><i class="fas fa-exclamation-triangle"></i> الحيز الزمني ممتلئ</h3>
+                    <button class="close-btn" onclick="closeModal('category-full-modal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p style="color: var(--danger-color); margin-bottom: 20px;">
+                        <i class="fas fa-info-circle"></i> الحيز الزمني لهذه الفئة ممتلئ بالفعل.
+                    </p>
+                    <p style="margin-bottom: 20px;">هل تريد:</p>
+                    <div class="full-options">
+                        <button class="btn btn-primary" onclick="addTaskAnyway('${categoryId}', ${JSON.stringify(taskData).replace(/'/g, "\\'")})">
+                            <i class="fas fa-plus"></i> إضافة المهمة على أي حال
+                        </button>
+                        <button class="btn btn-warning" onclick="replaceCompletedTask('${categoryId}', ${JSON.stringify(taskData).replace(/'/g, "\\'")})">
+                            <i class="fas fa-exchange-alt"></i> استبدالها بمهمة مكتملة
+                        </button>
+                        <button class="btn btn-secondary" onclick="closeModal('category-full-modal')">
+                            <i class="fas fa-times"></i> إلغاء الإضافة
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    const existingModal = document.getElementById('category-full-modal');
+    if (existingModal) existingModal.remove();
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    document.getElementById('category-full-modal').classList.add('active');
+}
+
+function addTaskAnyway(categoryId, taskData) {
+    addTask(taskData);
+    closeModal('category-full-modal');
+}
+
+function replaceCompletedTask(categoryId, taskData) {
+    const completedTasks = AppState.tasks.filter(task => 
+        task.categoryId === categoryId && task.completed
+    );
+    
+    if (completedTasks.length > 0) {
+        const oldestTask = completedTasks.sort((a, b) => 
+            new Date(a.createdAt) - new Date(b.createdAt)
+        )[0];
+        
+        deleteTask(oldestTask.id);
+        addTask(taskData);
+    } else {
+        alert('لا توجد مهام مكتملة في هذه الفئة لاستبدالها.');
+    }
+    
+    closeModal('category-full-modal');
+}
 // ========== إدارة الملاحظات ==========
 function renderNotes() {
     const container = document.getElementById('notes-list');
@@ -2060,12 +2200,13 @@ function openNoteEditor(noteId) {
         setupNotesEditorEvents();
     }, 100);
 }
-
 function setupNotesEditorEvents() {
     // ✅ **إضافة تحقق من وجود العناصر قبل إضافة الأحداث**
     const saveNotesBtn = document.getElementById('save-notes-btn');
     const closeNotesBtn = document.getElementById('close-notes-btn');
     const addCheckboxBtn = document.getElementById('add-checkbox-btn');
+    const addLinkBtn = document.getElementById('add-link-btn');
+    const addImageBtn = document.getElementById('add-image-btn');
     const fontFamilySelect = document.getElementById('notes-font-family');
     const fontSizeSelect = document.getElementById('notes-font-size');
     const fontWeightSelect = document.getElementById('notes-font-weight');
@@ -2073,7 +2214,7 @@ function setupNotesEditorEvents() {
     const fontColorSelect = document.getElementById('notes-font-color');
     
     // التحقق من وجود كل العناصر المطلوبة
-    if (!saveNotesBtn || !closeNotesBtn || !addCheckboxBtn) {
+    if (!saveNotesBtn || !closeNotesBtn || !addCheckboxBtn || !addLinkBtn || !addImageBtn) {
         console.warn('⚠️ بعض عناصر محرر الملاحظات غير موجودة في DOM');
         return; // الخروج من الدالة إذا لم تكن العناصر موجودة
     }
@@ -2094,7 +2235,15 @@ function setupNotesEditorEvents() {
         const editor = document.getElementById('notes-editor-content');
         if (!editor) return;
         
-        const checkboxHtml = `<div class="note-checkbox-item"><input type="checkbox" class="note-checkbox"> <span class="note-checkbox-text" contenteditable="true">عنصر جديد</span></div>`;
+        const checkboxHtml = `
+            <div class="note-checkbox-item" contenteditable="false" style="display: flex; align-items: center; gap: 8px; margin: 5px 0;">
+                <input type="checkbox" class="note-checkbox">
+                <span class="note-checkbox-text" contenteditable="true" style="flex: 1;">عنصر جديد</span>
+                <button class="btn-delete-checkbox" style="background: none; border: none; color: var(--danger-color); cursor: pointer; padding: 2px 5px;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
         
         // إدراج HTML في المحرر
         const selection = window.getSelection();
@@ -2118,6 +2267,98 @@ function setupNotesEditorEvents() {
             // إذا لم يكن هناك نطاق محدد، نضيف في النهاية
             editor.insertAdjacentHTML('beforeend', checkboxHtml);
         }
+        
+        // إضافة حدث لحذف الـ Checkbox
+        const checkboxItems = editor.querySelectorAll('.note-checkbox-item');
+        const lastItem = checkboxItems[checkboxItems.length - 1];
+        if (lastItem) {
+            const deleteBtn = lastItem.querySelector('.btn-delete-checkbox');
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', function() {
+                    this.closest('.note-checkbox-item').remove();
+                });
+            }
+        }
+    });
+    
+    // زر إضافة رابط
+    addLinkBtn.addEventListener('click', () => {
+        const url = prompt('أدخل الرابط URL:');
+        if (url) {
+            const text = prompt('أدخل النص الذي سيظهر (اتركه فارغاً لإظهار الرابط فقط):', url);
+            if (text !== null) {
+                document.execCommand('createLink', false, url);
+                // تعيين لون الرابط حسب الثيم
+                const link = document.querySelector('#notes-editor-content a[href="' + url + '"]');
+                if (link) {
+                    if (AppState.currentTheme === 'black') {
+                        link.style.color = '#f0f0f0';
+                    } else {
+                        link.style.color = 'var(--theme-text)';
+                    }
+                }
+            }
+        }
+    });
+    
+    // زر إضافة صورة
+    addImageBtn.addEventListener('click', () => {
+        const url = prompt('أدخل رابط الصورة URL:');
+        if (url) {
+            document.execCommand('insertImage', false, url);
+            // إضافة زر حذف للصورة
+            const images = document.querySelectorAll('#notes-editor-content img');
+            const lastImg = images[images.length - 1];
+            if (lastImg) {
+                lastImg.style.maxWidth = '100%';
+                lastImg.style.cursor = 'move';
+                lastImg.contentEditable = false;
+                
+                // إضافة زر حذف
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'image-delete-btn';
+                deleteBtn.innerHTML = '<i class="fas fa-times"></i>';
+                deleteBtn.style.cssText = `
+                    position: absolute;
+                    top: 5px;
+                    left: 5px;
+                    background: rgba(247, 37, 133, 0.8);
+                    color: white;
+                    border: none;
+                    border-radius: 50%;
+                    width: 24px;
+                    height: 24px;
+                    cursor: pointer;
+                    z-index: 10;
+                    display: none;
+                `;
+                
+                const container = document.createElement('div');
+                container.style.position = 'relative';
+                container.style.display = 'inline-block';
+                container.style.margin = '10px 0';
+                
+                lastImg.parentNode.insertBefore(container, lastImg);
+                container.appendChild(lastImg);
+                container.appendChild(deleteBtn);
+                
+                container.addEventListener('mouseenter', () => {
+                    deleteBtn.style.display = 'block';
+                });
+                
+                container.addEventListener('mouseleave', () => {
+                    deleteBtn.style.display = 'none';
+                });
+                
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    container.remove();
+                });
+                
+                // جعل الصورة قابلة للسحب والتكبير/التصغير
+                makeImageDraggableAndResizable(lastImg);
+            }
+        }
     });
     
     // أدوات التنسيق
@@ -2125,7 +2366,12 @@ function setupNotesEditorEvents() {
         btn.addEventListener('click', function() {
             const command = this.dataset.command;
             if (command) {
-                document.execCommand(command, false, null);
+                // تصحيح أوامر المحاذاة للعربية
+                let correctedCommand = command;
+                if (command === 'justifyRight') correctedCommand = 'justifyLeft';
+                if (command === 'justifyLeft') correctedCommand = 'justifyRight';
+                
+                document.execCommand(correctedCommand, false, null);
                 this.classList.toggle('active');
             }
         });
@@ -2140,7 +2386,10 @@ function setupNotesEditorEvents() {
     
     if (fontSizeSelect) {
         fontSizeSelect.addEventListener('change', function() {
-            document.execCommand('fontSize', false, this.value);
+            const editor = document.getElementById('notes-editor-content');
+            if (editor) {
+                editor.style.fontSize = this.value + 'px';
+            }
         });
     }
     
@@ -2167,6 +2416,147 @@ function setupNotesEditorEvents() {
             document.execCommand('foreColor', false, this.value);
         });
     }
+    
+    // إضافة أزرار Undo/Redo لمحرر الملاحظات
+    setupEditorUndoRedo();
+}
+
+// دالة لجعل الصورة قابلة للسحب والتكبير/التصغير
+function makeImageDraggableAndResizable(img) {
+    let isDragging = false;
+    let isResizing = false;
+    let startX, startY, startWidth, startHeight, startLeft, startTop;
+    
+    img.style.position = 'relative';
+    img.style.cursor = 'move';
+    img.style.userSelect = 'none';
+    
+    // إضافة مقبض التكبير/التصغير
+    const resizeHandle = document.createElement('div');
+    resizeHandle.style.cssText = `
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 20px;
+        height: 20px;
+        background: rgba(67, 97, 238, 0.7);
+        cursor: nwse-resize;
+        border-radius: 2px;
+        z-index: 5;
+        display: none;
+    `;
+    resizeHandle.innerHTML = '↘';
+    
+    img.parentNode.appendChild(resizeHandle);
+    
+    const container = img.parentNode;
+    
+    // إظهار/إخفاء مقبض التكبير
+    container.addEventListener('mouseenter', () => {
+        resizeHandle.style.display = 'block';
+    });
+    
+    container.addEventListener('mouseleave', () => {
+        if (!isResizing) {
+            resizeHandle.style.display = 'none';
+        }
+    });
+    
+    // سحب الصورة
+    img.addEventListener('mousedown', (e) => {
+        if (e.target === resizeHandle) return;
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        startLeft = parseInt(img.style.left || 0);
+        startTop = parseInt(img.style.top || 0);
+        e.preventDefault();
+    });
+    
+    // تكبير/تصغير الصورة
+    resizeHandle.addEventListener('mousedown', (e) => {
+        isResizing = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        startWidth = img.offsetWidth;
+        startHeight = img.offsetHeight;
+        e.preventDefault();
+    });
+    
+    document.addEventListener('mousemove', (e) => {
+        if (isDragging) {
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            img.style.left = (startLeft + dx) + 'px';
+            img.style.top = (startTop + dy) + 'px';
+        }
+        
+        if (isResizing) {
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            img.style.width = (startWidth + dx) + 'px';
+            img.style.height = (startHeight + dy) + 'px';
+        }
+    });
+    
+    document.addEventListener('mouseup', () => {
+        isDragging = false;
+        isResizing = false;
+    });
+}
+
+// دالة لإضافة Undo/Redo لمحرر الملاحظات
+function setupEditorUndoRedo() {
+    const editor = document.getElementById('notes-editor-content');
+    if (!editor) return;
+    
+    // حفظ حالة المحرر
+    let undoStack = [];
+    let redoStack = [];
+    let maxStackSize = 20;
+    
+    function saveEditorState() {
+        const state = editor.innerHTML;
+        undoStack.push(state);
+        if (undoStack.length > maxStackSize) {
+            undoStack.shift();
+        }
+        redoStack = [];
+    }
+    
+    function undoEditor() {
+        if (undoStack.length === 0) return;
+        const currentState = editor.innerHTML;
+        redoStack.push(currentState);
+        editor.innerHTML = undoStack.pop();
+    }
+    
+    function redoEditor() {
+        if (redoStack.length === 0) return;
+        const currentState = editor.innerHTML;
+        undoStack.push(currentState);
+        editor.innerHTML = redoStack.pop();
+    }
+    
+    // حفظ الحالة عند كل تغيير
+    editor.addEventListener('input', () => {
+        saveEditorState();
+    });
+    
+    // اختصارات لوحة المفاتيح للمحرر
+    editor.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+            e.preventDefault();
+            undoEditor();
+        }
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+            e.preventDefault();
+            redoEditor();
+        }
+    });
+    
+    // حفظ الحالة الأولية
+    saveEditorState();
 }
 
 function saveNote() {
@@ -2228,10 +2618,63 @@ function switchView(viewName) {
         setTimeout(() => {
             setupNotesEditorEvents();
             renderNotes();
-        }, 50);
-    } else {
-        refreshCurrentView();
+          setTimeout(() => {
+        addUndoRedoButtons(viewName);
+    }, 50);
+}
+
+function addUndoRedoButtons(viewName) {
+    const view = document.getElementById(`${viewName}-view`);
+    if (!view) return;
+    
+    // إزالة الأزرار القديمة إن وجدت
+    const existingContainer = view.querySelector('.undo-redo-container');
+    if (existingContainer) existingContainer.remove();
+    
+    const container = document.createElement('div');
+    container.className = 'undo-redo-container';
+    container.style.cssText = `
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        margin: 20px 0;
+    `;
+    
+    container.innerHTML = `
+        <button id="undo-btn" class="btn btn-secondary btn-sm">
+            <i class="fas fa-undo"></i> تراجع (Ctrl+Z)
+        </button>
+        <button id="redo-btn" class="btn btn-secondary btn-sm">
+            <i class="fas fa-redo"></i> إعادة (Ctrl+Y)
+        </button>
+    `;
+    
+    // إدراج الأزرار في مكان مناسب
+    if (viewName === 'tasks') {
+        const tasksList = view.querySelector('#tasks-list');
+        if (tasksList) {
+            view.insertBefore(container, tasksList);
+        }
+    } else if (viewName === 'notes') {
+        const notesList = view.querySelector('#notes-list');
+        if (notesList) {
+            view.insertBefore(container, notesList);
+        }
+    } else if (viewName === 'categories') {
+        const categoriesList = view.querySelector('#categories-list');
+        if (categoriesList) {
+            view.insertBefore(container, categoriesList);
+        }
+    } else if (viewName === 'calendar') {
+        const calendarContent = view.querySelector('#calendar-content');
+        if (calendarContent) {
+            view.insertBefore(container, calendarContent);
+        }
     }
+    
+    // إضافة الأحداث
+    document.getElementById('undo-btn')?.addEventListener('click', () => UndoRedoManager.undo());
+    document.getElementById('redo-btn')?.addEventListener('click', () => UndoRedoManager.redo());
 }
 
 function setFilter(filterName) {
@@ -2243,6 +2686,165 @@ function setFilter(filterName) {
         }
     });
     renderTasks();
+}
+
+function setupSearch() {
+    const searchBtn = document.getElementById('search-btn');
+    if (!searchBtn) return;
+    
+    searchBtn.addEventListener('click', () => {
+        const modalHTML = `
+            <div class="modal" id="search-modal">
+                <div class="modal-content" style="max-width: 800px; max-height: 80vh;">
+                    <div class="modal-header">
+                        <h3><i class="fas fa-search"></i> البحث</h3>
+                        <button class="close-btn" onclick="closeModal('search-modal')">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="search-input-container" style="margin-bottom: 20px;">
+                            <input type="text" id="search-input" placeholder="ابحث في المهام والملاحظات..." 
+                                   style="width: 100%; padding: 12px; border: 1px solid var(--theme-border); border-radius: 8px;">
+                        </div>
+                        <div id="search-results" style="max-height: 400px; overflow-y: auto;">
+                            <!-- نتائج البحث تظهر هنا -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        const existingModal = document.getElementById('search-modal');
+        if (existingModal) existingModal.remove();
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.getElementById('search-modal').classList.add('active');
+        
+        // إضافة حدث البحث
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) {
+            searchInput.focus();
+            searchInput.addEventListener('input', performSearch);
+        }
+    });
+}
+
+function performSearch() {
+    const query = document.getElementById('search-input').value.toLowerCase().trim();
+    const resultsContainer = document.getElementById('search-results');
+    
+    if (!resultsContainer) return;
+    
+    if (!query) {
+        resultsContainer.innerHTML = '<p style="text-align: center; color: var(--gray-color);">اكتب للبحث...</p>';
+        return;
+    }
+    
+    let html = '';
+    let resultCount = 0;
+    
+    // البحث في المهام
+    AppState.tasks.forEach(task => {
+        const matches = task.title.toLowerCase().includes(query) || 
+                       (task.description && task.description.toLowerCase().includes(query));
+        
+        if (matches) {
+            resultCount++;
+            const category = getCategoryById(task.categoryId);
+            html += `
+                <div class="search-result-item" onclick="openEditTaskModal('${task.id}')" 
+                     style="padding: 15px; border-bottom: 1px solid var(--theme-border); cursor: pointer; transition: var(--transition);">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-tasks" style="color: ${category.color};"></i>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 500; margin-bottom: 5px;">${highlightText(task.title, query)}</div>
+                            ${task.description ? `<div style="font-size: 0.9rem; color: var(--gray-color);">${highlightText(task.description, query)}</div>` : ''}
+                            <div style="font-size: 0.8rem; color: var(--theme-primary); margin-top: 5px;">
+                                <i class="fas fa-tag"></i> ${category.name} • 
+                                <i class="fas fa-calendar"></i> ${formatDate(task.date)}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    });
+    
+    // البحث في الملاحظات
+    AppState.notes.forEach(note => {
+        const matches = note.title.toLowerCase().includes(query) || 
+                       (note.content && note.content.toLowerCase().includes(query));
+        
+        if (matches) {
+            resultCount++;
+            // إزالة HTML من المحتوى للعرض
+            const contentText = note.content.replace(/<[^>]*>/g, '').substring(0, 100) + '...';
+            html += `
+                <div class="search-result-item" onclick="openNoteEditor('${note.id}')" 
+                     style="padding: 15px; border-bottom: 1px solid var(--theme-border); cursor: pointer; transition: var(--transition);">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-sticky-note" style="color: #4361ee;"></i>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 500; margin-bottom: 5px;">${highlightText(note.title, query)}</div>
+                            <div style="font-size: 0.9rem; color: var(--gray-color);">${highlightText(contentText, query)}</div>
+                            <div style="font-size: 0.8rem; color: var(--theme-primary); margin-top: 5px;">
+                                <i class="fas fa-clock"></i> ${formatDate(note.updatedAt)}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    });
+    
+    // البحث في المهام المكتملة
+    const completedTasks = AppState.tasks.filter(task => task.completed);
+    completedTasks.forEach(task => {
+        const matches = task.title.toLowerCase().includes(query) || 
+                       (task.description && task.description.toLowerCase().includes(query));
+        
+        if (matches) {
+            resultCount++;
+            const category = getCategoryById(task.categoryId);
+            html += `
+                <div class="search-result-item" onclick="openEditTaskModal('${task.id}')" 
+                     style="padding: 15px; border-bottom: 1px solid var(--theme-border); cursor: pointer; transition: var(--transition); background: rgba(76, 201, 240, 0.05);">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-check-circle" style="color: var(--success-color);"></i>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 500; margin-bottom: 5px;">${highlightText(task.title, query)}</div>
+                            <div style="font-size: 0.8rem; color: var(--theme-primary); margin-top: 5px;">
+                                <i class="fas fa-tag"></i> ${category.name} • مكتملة
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    });
+    
+    if (resultCount === 0) {
+        html = `<p style="text-align: center; padding: 40px; color: var(--gray-color);">لا توجد نتائج للبحث عن "${query}"</p>`;
+    } else {
+        html = `<div style="padding: 10px; color: var(--gray-color); font-size: 0.9rem;">تم العثور على ${resultCount} نتيجة</div>` + html;
+    }
+    
+    resultsContainer.innerHTML = html;
+    
+    // إضافة تأثير hover
+    document.querySelectorAll('.search-result-item').forEach(item => {
+        item.addEventListener('mouseenter', function() {
+            this.style.background = 'var(--theme-border)';
+        });
+        item.addEventListener('mouseleave', function() {
+            this.style.background = '';
+        });
+    });
+}
+
+function highlightText(text, query) {
+    if (!query) return text;
+    const regex = new RegExp(`(${query})`, 'gi');
+    return text.replace(regex, '<span style="background: #ffeb3b; color: #000; padding: 0 2px; border-radius: 2px;">$1</span>');
 }
 
 // ========== تهيئة الصفحة ==========
@@ -2481,9 +3083,14 @@ setTimeout(() => {
 }
 
 function openAddTaskModal(preselectedCategory = null) {
-    const categorySelect = document.getElementById('task-category');
-    
     // ✅ **التحقق من وجود العنصر أولاً**
+    const modal = document.getElementById('add-task-modal');
+    if (!modal) {
+        console.error('نافذة إضافة المهمة غير موجودة');
+        return;
+    }
+    
+    const categorySelect = document.getElementById('task-category');
     if (!categorySelect) {
         console.error('عنصر task-category غير موجود');
         return;
