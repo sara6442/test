@@ -2619,11 +2619,15 @@ function switchView(viewName) {
     if (viewName === 'notes') {
         setTimeout(() => {
             setupNotesEditorEvents();
-         addUndoRedoButtons(viewName);
+            renderNotes(); // ✅ هذا ما كان ناقصاً!
+            addUndoRedoButtons(viewName);
         }, 50);
+    } else {
+        // ✅ لبقية العروض، نستدعي refreshCurrentView
+        refreshCurrentView();
+        addUndoRedoButtons(viewName);
     }
 }
-
 function addUndoRedoButtons(viewName) {
     const view = document.getElementById(`${viewName}-view`);
     if (!view) return;
