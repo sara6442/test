@@ -75,6 +75,60 @@ const AppState = {
     currentTheme: 'gray'
 };
 
+// ========== وظائف المساعدة ==========
+function generateId() {
+    return Date.now().toString() + Math.random().toString(36).substr(2, 9);
+}
+
+
+// ========== وظائف المساعدة ==========
+function getCategoryById(categoryId) {
+    return AppState.categories.find(cat => cat.id === categoryId) || 
+           { 
+               name: 'عام', 
+               color: '#6c757d', 
+               timeframe: '', 
+               messageEmpty: '', 
+               messageCompleted: '', 
+               messagePending: '', 
+               customDays: 0 
+           };
+}
+
+function isTaskOverdue(task) {
+    if (!task.date || task.completed) return false;
+    const today = new Date().toISOString().split('T')[0];
+    return task.date < today;
+}
+
+function formatDate(dateStr) {
+    if (!dateStr) return 'بدون تاريخ';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('ar-SA');
+}
+
+function formatTime(timeStr) {
+    if (!timeStr) return 'بدون وقت';
+    return timeStr;
+}
+
+function getTaskTimeInMinutes(task) {
+    if (!task.time) return 0;
+    const [hours, minutes] = task.time.split(':').map(Number);
+    return hours * 60 + minutes;
+}
+
+function refreshCurrentView() {
+    if (AppState.currentView === 'tasks') renderTasks();
+    else if (AppState.currentView === 'calendar') renderCalendar();
+    else if (AppState.currentView === 'categories') renderCategories();
+    else if (AppState.currentView === 'notes') renderNotes();
+    
+ if (typeof renderCategoriesStatus === 'function') {
+        renderCategoriesStatus();
+    }
+}
+
 const UndoRedoManager = {
     undoStack: [],
     redoStack: [],
@@ -636,54 +690,6 @@ function saveNotes() {
     }
 }
 
-// ========== وظائف المساعدة ==========
-function getCategoryById(categoryId) {
-    return AppState.categories.find(cat => cat.id === categoryId) || 
-           { 
-               name: 'عام', 
-               color: '#6c757d', 
-               timeframe: '', 
-               messageEmpty: '', 
-               messageCompleted: '', 
-               messagePending: '', 
-               customDays: 0 
-           };
-}
-
-function isTaskOverdue(task) {
-    if (!task.date || task.completed) return false;
-    const today = new Date().toISOString().split('T')[0];
-    return task.date < today;
-}
-
-function formatDate(dateStr) {
-    if (!dateStr) return 'بدون تاريخ';
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('ar-SA');
-}
-
-function formatTime(timeStr) {
-    if (!timeStr) return 'بدون وقت';
-    return timeStr;
-}
-
-function getTaskTimeInMinutes(task) {
-    if (!task.time) return 0;
-    const [hours, minutes] = task.time.split(':').map(Number);
-    return hours * 60 + minutes;
-}
-
-function refreshCurrentView() {
-    if (AppState.currentView === 'tasks') renderTasks();
-    else if (AppState.currentView === 'calendar') renderCalendar();
-    else if (AppState.currentView === 'categories') renderCategories();
-    else if (AppState.currentView === 'notes') renderNotes();
-    
- if (typeof renderCategoriesStatus === 'function') {
-        renderCategoriesStatus();
-    }
-}
-
 // ========== إدارة المهام ==========
 function addTask(taskData) {
     console.log("إضافة مهمة:", taskData);
@@ -942,11 +948,10 @@ function renderTasks() {
                         ${isOverdue ? `
                         <div class="task-overdue-badge" style="position: absolute; top: 10px; left: 10px; background: var(--danger-color); color: white; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 500;">
                             <i class="fas fa-exclamation-circle"></i> متأخرة
-                        </div>
+                     </div>
                         ` : ''}
-                        <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''}>
-                    <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''}>
-                    <div class="task-content">
+                        <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''}> <!-- ⚠️ واحد فقط -->
+                        <div class="task-content">
                         <div class="task-title">${task.title}</div>
                         ${task.description ? `<div class="task-description">${task.description}</div>` : ''}
                         <div class="task-meta">
@@ -2619,7 +2624,7 @@ function switchView(viewName) {
     if (viewName === 'notes') {
         setTimeout(() => {
             setupNotesEditorEvents();
-            renderNotes(); // ✅ هذا ما كان ناقصاً!
+            renderNotes();
             addUndoRedoButtons(viewName);
         }, 50);
     } else {
@@ -2628,6 +2633,7 @@ function switchView(viewName) {
         addUndoRedoButtons(viewName);
     }
 }
+
 function addUndoRedoButtons(viewName) {
     const view = document.getElementById(`${viewName}-view`);
     if (!view) return;
@@ -2874,7 +2880,8 @@ function initializePage() {
     initializeThemes();    
     renderCategoriesStatus();
     
-
+    // ✅ **إعداد البحث**
+    setupSearch();
     
     // ========== أحداث التنقل ==========
     document.querySelectorAll('.nav-item').forEach(item => {
@@ -2883,7 +2890,7 @@ function initializePage() {
             switchView(this.dataset.view);
         });
     });
-    
+
     // ========== أحداث المرشحات ==========
     document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.addEventListener('click', function() {
@@ -3145,6 +3152,28 @@ window.changeCalendarDate = function(change) {
     renderCalendar();
 };
 
+// دالة التنقل بين أسابيع الجدول
+window.navigateCalendarWeeks = function(weeks) {
+    AppState.currentCalendarDate = new Date(
+        AppState.currentCalendarDate.getTime() + weeks * 7 * 24 * 60 * 60 * 1000
+    );
+    renderCalendar();
+};
+
+// دالة عرض جميع المهام ليوم محدد
+window.showAllTasksForDay = function(dateStr) {
+    const tasksForDay = AppState.tasks.filter(task => task.date === dateStr);
+    if (tasksForDay.length === 0) return;
+    
+    let message = `المهام ليوم ${formatDate(dateStr)}:\n\n`;
+    tasksForDay.forEach((task, index) => {
+        const category = getCategoryById(task.categoryId);
+        message += `${index + 1}. ${task.title} (${category.name}) - ${task.time || 'بدون وقت'}\n`;
+    });
+    
+    alert(message);
+};
+
 // جعل الوظائف متاحة عالمياً
 window.openEditTaskModal = openEditTaskModal;
 window.openAddTaskModal = openAddTaskModal;
@@ -3154,4 +3183,6 @@ window.openNoteEditor = openNoteEditor;
 window.toggleTaskCompletion = toggleTaskCompletion;
 window.renderTasks = renderTasks;
 window.renderCalendar = renderCalendar;
+
+// بدء التطبيق
 document.addEventListener('DOMContentLoaded', initializePage);
