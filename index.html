@@ -43,7 +43,7 @@
             </nav>
             
             <div class="sidebar-footer">
-                <button class="search-btn" id="search-btn" style="display: flex; align-items: center; gap: 10px; padding: 12px; color: rgba(255, 255, 255, 0.9); background: rgba(255, 255, 255, 0.1); border: none; border-radius: 8px; cursor: pointer; transition: var(--transition); width: 100%; font-size: 1rem; margin-bottom: 10px;">
+                <button class="search-btn" id="search-btn">
                     <i class="fas fa-search"></i>
                     <span>بحث</span>
                 </button>
@@ -367,21 +367,26 @@
             </div>
         </div>
         <div class="notes-toolbar-right">
-            <button class="btn btn-info btn-sm" id="add-link-btn" title="إضافة رابط">
-                <i class="fas fa-link"></i>
-            </button>
-            <button class="btn btn-info btn-sm" id="add-image-btn" title="إضافة صورة">
-                <i class="fas fa-image"></i>
-            </button>
-            <button class="btn btn-warning btn-sm" id="add-checkbox-btn" title="إضافة خانة اختيار">
-                <i class="fas fa-square-check"></i>
-            </button>
-            <button class="btn btn-success btn-sm" id="save-notes-btn" title="حفظ">
-                <i class="fas fa-save"></i>
-            </button>
-            <button class="btn btn-danger btn-sm" id="close-notes-btn" title="إغلاق">
-                <i class="fas fa-times"></i>
-            </button>
+            <div class="tool-group">
+                <button class="btn btn-info btn-sm" id="add-link-btn" title="إضافة رابط">
+                    <i class="fas fa-link"></i>
+                </button>
+                <button class="btn btn-info btn-sm" id="add-image-btn" title="إضافة صورة">
+                    <i class="fas fa-image"></i>
+                </button>
+                <button class="btn btn-warning btn-sm" id="add-checkbox-btn" title="إضافة خانة اختيار">
+                    <i class="fas fa-square-check"></i>
+                </button>
+            </div>
+            <div class="tool-separator"></div>
+            <div class="tool-group">
+                <button class="btn btn-success btn-sm" id="save-notes-btn" title="حفظ">
+                    <i class="fas fa-save"></i>
+                </button>
+                <button class="btn btn-danger btn-sm" id="close-notes-btn" title="إغلاق">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
         </div>
     </div>
     
