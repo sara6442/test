@@ -828,7 +828,6 @@ function saveNotes() {
 }
 
 // ========== إضافة مهمة جديدة ==========
-// ========== إدارة المهام ==========
 function addTask(taskData) {
     console.log("إضافة مهمة:", taskData);
     
@@ -873,6 +872,7 @@ function addTaskAnyway(categoryId, taskData) {
     addTask(taskData);
     closeModal('category-full-modal');
 }
+
 
 function replaceCompletedTask(categoryId, taskData) {
     const completedTasks = AppState.tasks.filter(task => 
@@ -997,7 +997,6 @@ function openEditTaskModal(taskId) {
     
     document.getElementById('edit-task-modal').classList.add('active');
 }
-
 function renderTasks() {
     const container = document.getElementById('tasks-list');
     const tasksView = document.getElementById('tasks-view');
@@ -1209,6 +1208,7 @@ function renderTasks() {
         });
     }
 }
+
 
 // ========== عرض الجدول الزمني ==========
 function renderCalendar() {
@@ -2270,18 +2270,7 @@ function setupMainPageFiltersWithStatus() {
         box-shadow: var(--box-shadow);
     `;
     
-    // قسم الفلاتر على اليمين
-    const filtersSection = document.createElement('div');
-    filtersSection.style.cssText = 'display: flex; gap: 10px; flex-wrap: wrap;';
-    filtersSection.innerHTML = `
-        <button class="filter-btn active" data-filter="pending">المهام النشطة</button>
-        <button class="filter-btn" data-filter="completed">المكتملة</button>
-        <button class="filter-btn" data-filter="deleted">المحذوفة</button>
-        <button class="filter-btn" data-filter="overdue">المتأخرة</button>
-        <button class="filter-btn" data-filter="all">الكل</button>
-    `;
-    
-    // قسم حالة الفئات على اليسار
+    // قسم حالة الفئات على اليمين
     const categoriesStatusSection = document.createElement('div');
     categoriesStatusSection.className = 'categories-status-section';
     categoriesStatusSection.style.cssText = 'display: flex; gap: 15px; align-items: center;';
@@ -2326,6 +2315,17 @@ function setupMainPageFiltersWithStatus() {
     
     categoriesStatusSection.appendChild(viewAllStatusBtn);
     
+    // قسم الفلاتر على اليسار
+    const filtersSection = document.createElement('div');
+    filtersSection.style.cssText = 'display: flex; gap: 10px; flex-wrap: wrap;';
+    filtersSection.innerHTML = `
+        <button class="filter-btn active" data-filter="pending">المهام النشطة</button>
+        <button class="filter-btn" data-filter="completed">المكتملة</button>
+        <button class="filter-btn" data-filter="deleted">المحذوفة</button>
+        <button class="filter-btn" data-filter="overdue">المتأخرة</button>
+        <button class="filter-btn" data-filter="all">الكل</button>
+    `;
+    
     // إضافة الأقسام إلى الحاوية
     filtersContainer.appendChild(categoriesStatusSection);
     filtersContainer.appendChild(filtersSection);
@@ -2347,6 +2347,7 @@ function setupMainPageFiltersWithStatus() {
         });
     });
 }
+
 function showCategoryFullStatus(categoryId) {
     const status = calculateCategoryStatus(categoryId);
     if (!status) return;
@@ -2410,6 +2411,70 @@ function isCategoryFull(categoryId) {
     
     return totalDuration >= category.timeframeMinutes;
 }
+function addTask(taskData) {
+    console.log("إضافة مهمة:", taskData);
+    
+    const category = AppState.categories.find(c => c.id === taskData.categoryId);
+    if (category && category.timeframeMinutes) {
+        const categoryTasks = AppState.tasks.filter(task => task.categoryId === taskData.categoryId);
+        const totalDuration = categoryTasks.reduce((sum, task) => sum + (task.duration || 0), 0);
+        
+        if (totalDuration + (taskData.duration || 0) > category.timeframeMinutes) {
+            if (!confirm(`الحيز الزمني للفئة "${category.name}" ممتلئ (${totalDuration}/${category.timeframeMinutes} دقيقة).\nهل أنت متأكد من إضافة مهمة جديدة؟`)) {
+                return;
+            }
+            
+            showCategoryFullOptions(category.id, taskData);
+            return;
+        }
+    }
+    
+    const newTask = {
+        id: generateId(),
+        title: taskData.title,
+        description: taskData.description || '',
+        categoryId: taskData.categoryId,
+        duration: parseInt(taskData.duration) || 30,
+        date: taskData.date || new Date().toISOString().split('T')[0],
+        time: taskData.time || '',
+        priority: taskData.priority || 'medium',
+        completed: false,
+        createdAt: new Date().toISOString()
+    };
+    
+    UndoRedoManager.saveState('إضافة مهمة');
+    AppState.tasks.push(newTask);
+    saveTasks();
+    refreshCurrentView();
+    
+    closeModal('add-task-modal');
+    document.getElementById('task-form')?.reset();
+}
+
+function addTaskAnyway(categoryId, taskData) {
+    addTask(taskData);
+    closeModal('category-full-modal');
+}
+
+function replaceCompletedTask(categoryId, taskData) {
+    const completedTasks = AppState.tasks.filter(task => 
+        task.categoryId === categoryId && task.completed
+    );
+    
+    if (completedTasks.length > 0) {
+        const oldestTask = completedTasks.sort((a, b) => 
+            new Date(a.createdAt) - new Date(b.createdAt)
+        )[0];
+        
+        deleteTask(oldestTask.id);
+        addTask(taskData);
+    } else {
+        alert('لا توجد مهام مكتملة في هذه الفئة لاستبدالها.');
+    }
+    
+    closeModal('category-full-modal');
+}
+
 function showCategoryFullOptions(categoryId, taskData) {
     const modalHTML = `
         <div class="modal" id="category-full-modal">
@@ -2445,7 +2510,6 @@ function showCategoryFullOptions(categoryId, taskData) {
     document.body.insertAdjacentHTML('beforeend', modalHTML);
     document.getElementById('category-full-modal').classList.add('active');
 }
-
 
 // ========== إدارة الملاحظات ==========
 function renderNotes() {
@@ -3214,90 +3278,6 @@ function makeImageDraggableAndResizable(img, container, deleteBtn, resizeHandle)
     }
 }
 
-// دالة لجعل الصورة قابلة للسحب والتكبير/التصغير
-function makeImageDraggableAndResizable(img) {
-    let isDragging = false;
-    let isResizing = false;
-    let startX, startY, startWidth, startHeight, startLeft, startTop;
-    
-    img.style.position = 'relative';
-    img.style.cursor = 'move';
-    img.style.userSelect = 'none';
-    
-    // إضافة مقبض التكبير/التصغير
-    const resizeHandle = document.createElement('div');
-    resizeHandle.style.cssText = `
-        position: absolute;
-        bottom: 0;
-        right: 0;
-        width: 20px;
-        height: 20px;
-        background: rgba(67, 97, 238, 0.7);
-        cursor: nwse-resize;
-        border-radius: 2px;
-        z-index: 5;
-        display: none;
-    `;
-    resizeHandle.innerHTML = '↘';
-    
-    img.parentNode.appendChild(resizeHandle);
-    
-    const container = img.parentNode;
-    
-    // إظهار/إخفاء مقبض التكبير
-    container.addEventListener('mouseenter', () => {
-        resizeHandle.style.display = 'block';
-    });
-    
-    container.addEventListener('mouseleave', () => {
-        if (!isResizing) {
-            resizeHandle.style.display = 'none';
-        }
-    });
-    
-    // سحب الصورة
-    img.addEventListener('mousedown', (e) => {
-        if (e.target === resizeHandle) return;
-        isDragging = true;
-        startX = e.clientX;
-        startY = e.clientY;
-        startLeft = parseInt(img.style.left || 0);
-        startTop = parseInt(img.style.top || 0);
-        e.preventDefault();
-    });
-    
-    // تكبير/تصغير الصورة
-    resizeHandle.addEventListener('mousedown', (e) => {
-        isResizing = true;
-        startX = e.clientX;
-        startY = e.clientY;
-        startWidth = img.offsetWidth;
-        startHeight = img.offsetHeight;
-        e.preventDefault();
-    });
-    
-    document.addEventListener('mousemove', (e) => {
-        if (isDragging) {
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
-            img.style.left = (startLeft + dx) + 'px';
-            img.style.top = (startTop + dy) + 'px';
-        }
-        
-        if (isResizing) {
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
-            img.style.width = (startWidth + dx) + 'px';
-            img.style.height = (startHeight + dy) + 'px';
-        }
-    });
-    
-    document.addEventListener('mouseup', () => {
-        isDragging = false;
-        isResizing = false;
-    });
-}
-
 // دالة لإضافة Undo/Redo لمحرر الملاحظات
 function setupEditorUndoRedo() {
     const editor = document.getElementById('notes-editor-content');
@@ -3484,8 +3464,6 @@ function setFilter(filterName) {
     });
     renderTasks();
 }
-
-// ========== Undo/Redo المحسّن ==========
 function setupGlobalUndoRedo() {
     // إضافة أزرار Undo/Redo الثابتة
     const undoRedoHTML = `
@@ -3698,8 +3676,6 @@ function highlightText(text, query) {
     const regex = new RegExp(`(${query})`, 'gi');
     return text.replace(regex, '<span style="background: #ffeb3b; color: #000; padding: 0 2px; border-radius: 2px;">$1</span>');
 }
-
-// ========== تهيئة الصفحة ==========
 function initializePage() {
     console.log("تهيئة الصفحة...");
     
@@ -3754,6 +3730,18 @@ function initializePage() {
         // إضافة الحدث الجديد
         document.getElementById('add-note-btn').addEventListener('click', () => {
             addNote();
+        });
+    }
+    
+    // ========== زر إضافة مهمة رئيسي ==========
+    const addTaskBtn = document.getElementById('add-task-btn');
+    if (addTaskBtn) {
+        // إزالة جميع الأحداث السابقة أولاً
+        addTaskBtn.replaceWith(addTaskBtn.cloneNode(true));
+        
+        // إضافة الحدث الجديد
+        document.getElementById('add-task-btn').addEventListener('click', () => {
+            openAddTaskModal();
         });
     }
     
@@ -3904,26 +3892,26 @@ function initializePage() {
     });
     
     // ========== تحميل العرض الأولي ==========
-   renderTasks();
-console.log("✅ التطبيق جاهز للاستخدام!");
-
-// ✅ **تأخير تهيئة بعض الأحداث حتى يتم تحميل كل شيء**
-setTimeout(() => {
-    // إعادة تهيئة الفلاتر
-    const filterButtons = document.querySelectorAll('.filter-btn');
-    if (filterButtons.length > 0) {
-        filterButtons.forEach(btn => {
-            btn.addEventListener('click', function() {
-                setFilter(this.dataset.filter);
-            });
-        });
-    }
+    renderTasks();
+    console.log("✅ التطبيق جاهز للاستخدام!");
     
-    // إذا كنا في عرض الملاحظات من البداية (ممكن في حالة refresh)
-    if (AppState.currentView === 'notes') {
-        setupNotesEditorEvents();
-    }
-}, 100);
+    // ✅ **تأخير تهيئة بعض الأحداث حتى يتم تحميل كل شيء**
+    setTimeout(() => {
+        // إعادة تهيئة الفلاتر
+        const filterButtons = document.querySelectorAll('.filter-btn');
+        if (filterButtons.length > 0) {
+            filterButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    setFilter(this.dataset.filter);
+                });
+            });
+        }
+        
+        // إذا كنا في عرض الملاحظات من البداية (ممكن في حالة refresh)
+        if (AppState.currentView === 'notes') {
+            setupNotesEditorEvents();
+        }
+    }, 100);
 }
 
 function openAddTaskModal(preselectedCategory = null) {
