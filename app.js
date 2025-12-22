@@ -75,6 +75,14 @@ const AppState = {
     currentTheme: 'gray'
 };
 
+Date.prototype.getWeekNumber = function() {
+    const date = new Date(this.getTime());
+    date.setHours(0, 0, 0, 0);
+    date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
+    const week1 = new Date(date.getFullYear(), 0, 4);
+    return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+};
+
 // ========== وظائف المساعدة ==========
 function generateId() {
     return Date.now().toString() + Math.random().toString(36).substr(2, 9);
@@ -861,6 +869,30 @@ function addTask(taskData) {
     document.getElementById('task-form')?.reset();
 }
 
+function addTaskAnyway(categoryId, taskData) {
+    addTask(taskData);
+    closeModal('category-full-modal');
+}
+
+function replaceCompletedTask(categoryId, taskData) {
+    const completedTasks = AppState.tasks.filter(task => 
+        task.categoryId === categoryId && task.completed
+    );
+    
+    if (completedTasks.length > 0) {
+        const oldestTask = completedTasks.sort((a, b) => 
+            new Date(a.createdAt) - new Date(b.createdAt)
+        )[0];
+        
+        deleteTask(oldestTask.id);
+        addTask(taskData);
+    } else {
+        alert('لا توجد مهام مكتملة في هذه الفئة لاستبدالها.');
+    }
+    
+    closeModal('category-full-modal');
+}
+
 function updateTask(taskId, taskData) {
     const taskIndex = AppState.tasks.findIndex(task => task.id === taskId);
     if (taskIndex === -1) return;
@@ -966,8 +998,6 @@ function openEditTaskModal(taskId) {
     document.getElementById('edit-task-modal').classList.add('active');
 }
 
-
-// ========== عرض المهام ==========
 function renderTasks() {
     const container = document.getElementById('tasks-list');
     const tasksView = document.getElementById('tasks-view');
@@ -1009,7 +1039,6 @@ function renderTasks() {
             tasksToShow = AppState.tasks;
             break;
     }
-
     
     // ترتيب المهام
     tasksToShow.sort((a, b) => {
@@ -1086,16 +1115,16 @@ function renderTasks() {
                 </div>
             `;
         } else {
-                html += `
-                    <div class="task-card ${task.completed ? 'completed' : ''} ${isOverdue ? 'overdue' : ''}" 
-                         data-id="${task.id}">
-                        ${isOverdue ? `
-                        <div class="task-overdue-badge" style="position: absolute; top: 10px; left: 10px; background: var(--danger-color); color: white; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 500;">
-                            <i class="fas fa-exclamation-circle"></i> متأخرة
-                     </div>
-                        ` : ''}
-                        <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''}> <!-- ⚠️ واحد فقط -->
-                        <div class="task-content">
+            html += `
+                <div class="task-card ${task.completed ? 'completed' : ''} ${isOverdue ? 'overdue' : ''}" 
+                     data-id="${task.id}">
+                    ${isOverdue ? `
+                    <div class="task-overdue-badge" style="position: absolute; top: 10px; left: 10px; background: var(--danger-color); color: white; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 500;">
+                        <i class="fas fa-exclamation-circle"></i> متأخرة
+                    </div>
+                    ` : ''}
+                    <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''}>
+                    <div class="task-content">
                         <div class="task-title">${task.title}</div>
                         ${task.description ? `<div class="task-description">${task.description}</div>` : ''}
                         <div class="task-meta">
@@ -1202,6 +1231,8 @@ function renderCalendar() {
         renderMonthlyCalendar(container);
     }
 }
+
+
 
 // ========== الجدول اليومي مع الأقسام الزمنية الجديدة ==========
 function renderDailyCalendar(container) {
@@ -1648,33 +1679,11 @@ function setupCalendarTooltips() {
         const category = getCategoryById(task.categoryId);
         
         card.addEventListener('mouseenter', (e) => {
-            const tooltip = document.getElementById('global-tooltip');
-            if (!tooltip) return;
-            
-            tooltip.innerHTML = `
-                <div class="tooltip-title">${task.title}</div>
-                ${task.description ? `<div class="tooltip-desc">${task.description}</div>` : ''}
-                <div class="tooltip-meta">
-                    <div><i class="fas fa-tag" style="color: ${category.color}"></i> ${category.name}</div>
-                    <div><i class="fas fa-calendar"></i> ${formatDate(task.date)}</div>
-                    <div><i class="fas fa-clock"></i> ${task.time || 'بدون وقت'}</div>
-                    <div><i class="fas fa-stopwatch"></i> ${task.duration} دقيقة</div>
-                    <div><i class="fas fa-flag" style="color: ${task.priority === 'high' ? '#f72585' : 
-                        task.priority === 'medium' ? '#f8961e' : '#4cc9f0'}"></i> 
-                        ${task.priority === 'high' ? 'عالية' : task.priority === 'medium' ? 'متوسطة' : 'منخفضة'}
-                    </div>
-                </div>
-                <div class="tooltip-hint">انقر للتعديل</div>
-            `;
-            
-            tooltip.style.left = e.pageX + 10 + 'px';
-            tooltip.style.top = e.pageY + 10 + 'px';
-            tooltip.style.display = 'block';
+            showCalendarTaskTooltip(e, taskId);
         });
         
         card.addEventListener('mouseleave', () => {
-            const tooltip = document.getElementById('global-tooltip');
-            if (tooltip) tooltip.style.display = 'none';
+            hideCalendarTaskTooltip();
         });
         
         card.addEventListener('click', () => {
@@ -2091,6 +2100,87 @@ function renderCategoriesStatus() {
     }
 }
 
+function showCategoriesStatusModal() {
+    let modalHTML = `
+        <div class="modal" id="categories-status-modal">
+            <div class="modal-content" style="max-width: 600px;">
+                <div class="modal-header">
+                    <h3>حالة الفئات</h3>
+                    <button class="close-btn" onclick="closeModal('categories-status-modal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="categories-status-container">
+    `;
+    
+    AppState.categories.forEach(category => {
+        const status = calculateCategoryStatus(category.id);
+        if (!status) return;
+        
+        let statusColor = '#6c757d';
+        let statusIcon = 'fas fa-circle';
+        
+        switch(status.status) {
+            case 'empty':
+                statusColor = '#6c757d';
+                statusIcon = 'fas fa-inbox';
+                break;
+            case 'completed':
+                statusColor = '#4cc9f0';
+                statusIcon = 'fas fa-check-circle';
+                break;
+            case 'exceeded':
+                statusColor = '#f72585';
+                statusIcon = 'fas fa-exclamation-triangle';
+                break;
+            case 'pending':
+                statusColor = '#f8961e';
+                statusIcon = 'fas fa-clock';
+                break;
+        }
+        
+        modalHTML += `
+            <div class="category-status-card" style="border-right: 4px solid ${statusColor}; margin-bottom: 15px; padding: 15px; background: var(--theme-card); border-radius: 8px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 12px; height: 12px; border-radius: 50%; background: ${category.color};"></div>
+                        <h4 style="margin: 0; color: var(--theme-text);">${category.name}</h4>
+                    </div>
+                    <i class="${statusIcon}" style="color: ${statusColor};"></i>
+                </div>
+                
+                <p style="color: ${statusColor}; margin-bottom: 10px; font-weight: 500;">
+                    ${status.message}
+                </p>
+                
+                <div style="display: flex; gap: 15px; font-size: 0.85rem; color: var(--gray-color);">
+                    <span><i class="fas fa-tasks"></i> ${status.totalTasks} مهام</span>
+                    <span><i class="fas fa-check-circle"></i> ${status.completedTasks} مكتملة</span>
+                    <span><i class="fas fa-clock"></i> ${status.totalDuration} دقيقة</span>
+                    <span><i class="fas fa-hourglass"></i> ${status.categoryTimeframe} دقيقة (حد)</span>
+                </div>
+            </div>
+        `;
+    });
+    
+    modalHTML += `
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeModal('categories-status-modal')">إغلاق</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // إضافة النافذة إلى DOM
+    const existingModal = document.getElementById('categories-status-modal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    document.getElementById('categories-status-modal').classList.add('active');
+}
 
 function setupMainPageFilters() {
     const tasksView = document.getElementById('tasks-view');
@@ -3626,49 +3716,20 @@ function initializePage() {
         currentDateElement.textContent = arabicDate;
     }
     
-    // تحميل البيانات
-    initializeData();
-    initializeThemes();    
-    renderCategoriesStatus();
+    // ========== نافذة إضافة مهمة ==========
+    // ضع تعريف المتغيرات هنا داخل initializePage
+    const closeTaskModalBtn = document.getElementById('close-task-modal');
+    const cancelTaskBtn = document.getElementById('cancel-task');
     
-    // ✅ **إعداد البحث**
-    setupSearch();
-    
-    // ✅ **إعداد Undo/Redo العام**
-    setupGlobalUndoRedo();
-    
-    // ========== أحداث التنقل ==========
-    document.querySelectorAll('.nav-item').forEach(item => {
-        item.addEventListener('click', function(e) {
-            e.preventDefault();
-            switchView(this.dataset.view);
+    if (closeTaskModalBtn) {
+        closeTaskModalBtn.addEventListener('click', () => {
+            closeModal('add-task-modal');
         });
-    });
-
-    // ========== أحداث المرشحات ==========
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            setFilter(this.dataset.filter);
-        });
-    });
+    }
     
-    // ========== أحداث الجدول الزمني ==========
-    document.querySelectorAll('.calendar-tab').forEach(tab => {
-        tab.addEventListener('click', function() {
-            AppState.currentCalendarView = this.dataset.range;
-            renderCalendar();
-        });
-    });
-    
-    // ========== زر إضافة مهمة ==========
-    const addTaskBtn = document.getElementById('add-task-btn');
-    if (addTaskBtn) {
-        // إزالة جميع الأحداث السابقة أولاً
-        addTaskBtn.replaceWith(addTaskBtn.cloneNode(true));
-        
-        // إضافة الحدث الجديد
-        document.getElementById('add-task-btn').addEventListener('click', () => {
-            openAddTaskModal();
+    if (cancelTaskBtn) {
+        cancelTaskBtn.addEventListener('click', () => {
+            closeModal('add-task-modal');
         });
     }
     
@@ -3944,16 +4005,12 @@ window.showAllTasksForDay = function(dateStr) {
     
     alert(message);
 };
-
-// جعل الوظائف متاحة عالمياً
-window.openEditTaskModal = openEditTaskModal;
-window.openAddTaskModal = openAddTaskModal;
-window.openEditCategoryModal = openEditCategoryModal;
-window.updateNoteTitle = updateNoteTitle;
-window.openNoteEditor = openNoteEditor;
-window.toggleTaskCompletion = toggleTaskCompletion;
-window.renderTasks = renderTasks;
-window.renderCalendar = renderCalendar;
+window.addTaskAnyway = addTaskAnyway;
+window.replaceCompletedTask = replaceCompletedTask;
+window.showCategoriesStatusModal = showCategoriesStatusModal;
+window.previewCustomTheme = previewCustomTheme;
+window.showCalendarTaskTooltip = showCalendarTaskTooltip;
+window.hideCalendarTaskTooltip = hideCalendarTaskTooltip;
 
 // بدء التطبيق
 document.addEventListener('DOMContentLoaded', initializePage);
