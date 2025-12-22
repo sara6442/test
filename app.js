@@ -2426,7 +2426,7 @@ setTimeout(() => {
         setupNotesEditorEvents();
     }
 }, 100);
-
+}
 function openAddTaskModal(preselectedCategory = null) {
     const categorySelect = document.getElementById('task-category');
     categorySelect.innerHTML = '<option value="">-- اختر الفئة --</option>';
