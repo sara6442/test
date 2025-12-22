@@ -908,6 +908,156 @@ body {
     to { opacity: 1; transform: translateY(0); }
 }
 
+/* ========== تلميحات البحث ========== */
+.search-result-item {
+    transition: all 0.2s ease;
+    border-bottom: 1px solid var(--theme-border);
+}
+
+.search-result-item:hover {
+    background: var(--theme-border);
+    transform: translateX(-5px);
+}
+
+.tooltip-title {
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: white;
+}
+
+.tooltip-desc {
+    font-size: 0.9em;
+    margin-bottom: 8px;
+    opacity: 0.9;
+}
+
+.tooltip-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.85em;
+}
+
+.tooltip-hint {
+    margin-top: 8px;
+    font-size: 0.8em;
+    color: #ffd166;
+    text-align: center;
+}
+
+/* ========== زر البحث ========== */
+.search-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    color: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: var(--transition);
+    width: 100%;
+    font-size: 1rem;
+    margin-bottom: 10px;
+}
+
+.search-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+/* ========== خيارات الحيز الزمني الممتلئ ========== */
+.full-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.full-options .btn {
+    justify-content: center;
+}
+
+/* ========== فصل الأدوات ========== */
+.tool-separator {
+    width: 1px;
+    height: 24px;
+    background: var(--theme-border);
+    margin: 0 10px;
+}
+
+/* ========== علامة متأخرة ========== */
+.task-overdue-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: var(--danger-color);
+    color: white;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    z-index: 1;
+    box-shadow: 0 2px 4px rgba(247, 37, 133, 0.3);
+    animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-red {
+    0% { box-shadow: 0 0 0 0 rgba(247, 37, 133, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(247, 37, 133, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(247, 37, 133, 0); }
+}
+
+/* ========== الرسائل في الفئات ========== */
+.message-group {
+    margin-top: 20px;
+    padding: 15px;
+    background: var(--theme-card);
+    border-radius: 8px;
+    border: 1px solid var(--theme-border);
+}
+
+.message-group h4 {
+    margin-bottom: 15px;
+    color: var(--theme-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ========== أزرار Undo/Redo ========== */
+.undo-redo-container {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin: 20px 0;
+    padding: 10px;
+    background: var(--theme-card);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--theme-border);
+}
+
+/* ========== الصور في الملاحظات ========== */
+.image-delete-btn {
+    transition: all 0.2s ease;
+}
+
+.image-delete-btn:hover {
+    transform: scale(1.1);
+    background: rgba(247, 37, 133, 1) !important;
+}
+
+/* ========== خلفية الملاحظات ========== */
+.notes-content {
+    background: transparent !important;
+    padding: 20px !important;
+}
+
+/* ========== خطوط عربية جديدة ========== */
+/* إضافة الروابط للخطوط في <head> */
+@import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Lateef:wght@200;300;400;700&family=Scheherazade+New:wght@400;700&family=Noto+Naskh+Arabic:wght@400;700&display=swap');
+
 /* ========== شريط التمرير المخصص ========== */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: var(--theme-card); border-radius: 10px; }
