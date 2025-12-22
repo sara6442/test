@@ -43,6 +43,10 @@
             </nav>
             
             <div class="sidebar-footer">
+                <button class="search-btn" id="search-btn" style="display: flex; align-items: center; gap: 10px; padding: 12px; color: rgba(255, 255, 255, 0.9); background: rgba(255, 255, 255, 0.1); border: none; border-radius: 8px; cursor: pointer; transition: var(--transition); width: 100%; font-size: 1rem; margin-bottom: 10px;">
+                    <i class="fas fa-search"></i>
+                    <span>بحث</span>
+                </button>
                 <button class="settings-btn" id="settings-btn">
                     <i class="fas fa-cog"></i>
                     <span>الإعدادات</span>
@@ -122,14 +126,19 @@
 
                 <!-- عرض الفئات -->
                 <div id="categories-view" class="view">
-                    <div class="categories-header">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding: 20px; background: var(--theme-card); border-radius: var(--border-radius); border: 1px solid var(--theme-border);">
                         <div>
-                            <h2 style="color: var(--theme-text);">إدارة الفئات</h2>
-                            <p style="color: var(--gray-color); margin-top: 10px;">إدارة فئات المهام وإضافة مهام جديدة لها</p>
+                            <h2 style="color: var(--theme-text); margin-bottom: 10px;">إدارة الفئات</h2>
+                            <p style="color: var(--gray-color);">إدارة فئات المهام مع الحيز الزمني ورسائل الحالات</p>
                         </div>
-                        <button class="btn btn-primary" id="add-category-btn">
-                            <i class="fas fa-plus"></i> فئة جديدة
-                        </button>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn btn-primary" id="add-category-btn">
+                                <i class="fas fa-plus"></i> فئة جديدة
+                            </button>
+                            <button class="btn btn-info" id="edit-categories-btn" title="تعديل الفئات">
+                                <i class="fas fa-edit"></i> تعديل الفئات
+                            </button>
+                        </div>
                     </div>
                     <div class="categories-grid" id="categories-list">
                         <!-- الفئات ستظهر هنا -->
@@ -270,7 +279,7 @@
         </div>
     </div>
 
-  <div class="modal" id="category-modal">
+<div class="modal" id="category-modal">
     <div class="modal-content" style="max-width: 600px;">
         <div class="modal-header">
             <h3 id="category-modal-title">إضافة فئة جديدة</h3>
@@ -287,23 +296,39 @@
                     <input type="color" id="category-color" value="#5a76e8" required>
                 </div>
                 <div class="form-group">
-                    <label for="category-timeframe">الحيز الزمني (بالدقائق) *</label>
+                    <label for="category-timeframe">الحيز الزمني (دقائق) *</label>
                     <input type="number" id="category-timeframe" placeholder="مثال: 480 دقيقة (8 ساعات)" min="1" value="480" required>
+                    <small style="color: var(--gray-color); display: block; margin-top: 5px;">إجمالي وقت المهام التي يمكن إضافتها لهذه الفئة</small>
                 </div>
                 
-                <div class="form-group">
-                    <label for="category-message-empty">رسالة عند عدم وجود مهام</label>
-                    <textarea id="category-message-empty" rows="2" placeholder="رسالة تظهر عندما لا توجد مهام في الفئة...">لا توجد مهام في هذه الفئة. أضف مهام جديدة لبدء العمل!</textarea>
-                </div>
-                
-                <div class="form-group">
-                    <label for="category-message-completed">رسالة عند اكتمال جميع المهام</label>
-                    <textarea id="category-message-completed" rows="2" placeholder="رسالة تظهر عند اكتمال جميع مهام الفئة...">ممتاز! لقد أكملت جميع المهام في هذه الفئة.</textarea>
-                </div>
-                
-                <div class="form-group">
-                    <label for="category-message-exceeded">رسالة عند تجاوز الحيز الزمني</label>
-                    <textarea id="category-message-exceeded" rows="2" placeholder="رسالة تظهر عند تجاوز الحيز الزمني...">لقد تجاوزت الوقت المخصص لهذه الفئة. حاول إدارة وقتك بشكل أفضل!</textarea>
+                <div class="message-group" style="margin-top: 20px; padding: 15px; background: var(--theme-card); border-radius: 8px; border: 1px solid var(--theme-border);">
+                    <h4 style="margin-bottom: 15px; color: var(--theme-primary);">
+                        <i class="fas fa-comment-alt"></i> رسائل الحالات
+                    </h4>
+                    
+                    <div class="form-group">
+                        <label for="category-message-empty">
+                            <i class="fas fa-inbox" style="color: #6c757d;"></i>
+                            عند عدم وجود مهام
+                        </label>
+                        <textarea id="category-message-empty" rows="2" placeholder="رسالة تظهر عندما لا توجد مهام في الفئة...">لا توجد مهام في هذه الفئة. أضف مهام جديدة لبدء العمل!</textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="category-message-completed">
+                            <i class="fas fa-check-circle" style="color: #4cc9f0;"></i>
+                            عند اكتمال جميع المهام
+                        </label>
+                        <textarea id="category-message-completed" rows="2" placeholder="رسالة تظهر عند اكتمال جميع مهام الفئة...">ممتاز! لقد أكملت جميع المهام في هذه الفئة.</textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="category-message-exceeded">
+                            <i class="fas fa-exclamation-triangle" style="color: #f72585;"></i>
+                            عند امتلاء الحيز الزمني
+                        </label>
+                        <textarea id="category-message-exceeded" rows="2" placeholder="رسالة تظهر عند تجاوز الحيز الزمني...">لقد تجاوزت الوقت المخصص لهذه الفئة. حاول إدارة وقتك بشكل أفضل!</textarea>
+                    </div>
                 </div>
             </form>
         </div>
@@ -313,9 +338,68 @@
         </div>
     </div>
 </div>
+    <!-- نافذة تعديل الفئة -->
+<div class="modal" id="edit-category-modal">
+    <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-header">
+            <h3 id="edit-category-modal-title">تعديل الفئة</h3>
+            <button class="close-btn" id="close-edit-category-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="edit-category-form">
+                <div class="form-group">
+                    <label for="edit-category-name">اسم الفئة *</label>
+                    <input type="text" id="edit-category-name" placeholder="أدخل اسم الفئة" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-category-color">لون الفئة *</label>
+                    <input type="color" id="edit-category-color" value="#5a76e8" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-category-timeframe">الحيز الزمني (دقائق) *</label>
+                    <input type="number" id="edit-category-timeframe" placeholder="مثال: 480 دقيقة (8 ساعات)" min="1" value="480" required>
+                </div>
+                
+                <div class="message-group" style="margin-top: 20px; padding: 15px; background: var(--theme-card); border-radius: 8px; border: 1px solid var(--theme-border);">
+                    <h4 style="margin-bottom: 15px; color: var(--theme-primary);">
+                        <i class="fas fa-comment-alt"></i> رسائل الحالات
+                    </h4>
+                    
+                    <div class="form-group">
+                        <label for="edit-category-message-empty">
+                            <i class="fas fa-inbox" style="color: #6c757d;"></i>
+                            عند عدم وجود مهام
+                        </label>
+                        <textarea id="edit-category-message-empty" rows="2" placeholder="رسالة تظهر عندما لا توجد مهام في الفئة..."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-category-message-completed">
+                            <i class="fas fa-check-circle" style="color: #4cc9f0;"></i>
+                            عند اكتمال جميع المهام
+                        </label>
+                        <textarea id="edit-category-message-completed" rows="2" placeholder="رسالة تظهر عند اكتمال جميع مهام الفئة..."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-category-message-exceeded">
+                            <i class="fas fa-exclamation-triangle" style="color: #f72585;"></i>
+                            عند امتلاء الحيز الزمني
+                        </label>
+                        <textarea id="edit-category-message-exceeded" rows="2" placeholder="رسالة تظهر عند تجاوز الحيز الزمني..."></textarea>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="cancel-edit-category">إلغاء</button>
+            <button class="btn btn-primary" id="save-edit-category">حفظ التعديلات</button>
+        </div>
+    </div>
+</div>
 
-    <!-- محرر الملاحظات المتقدم -->
-    <div class="notes-editor-container" id="notes-editor">
+   <!-- محرر الملاحظات المتقدم -->
+<div class="notes-editor-container" id="notes-editor">
     <div class="notes-toolbar">
         <div class="notes-toolbar-left">
             <input type="text" id="notes-editor-title" class="notes-title-input" placeholder="عنوان الملاحظة">
@@ -323,10 +407,10 @@
                 <select id="notes-font-family" class="font-select">
                     <option value="'Segoe UI', Tahoma, Geneva, Verdana, sans-serif">سجوي يو آي</option>
                     <option value="'Cairo', sans-serif">قاهرة</option>
-                    <option value="'Tajawal', sans-serif">تاجوال</option>
-                    <option value="'Aref Ruqaa', serif">عرف رقعة</option>
                     <option value="'Amiri', serif">أميري</option>
-                    <option value="'Arial', sans-serif">أريال</option>
+                    <option value="'Lateef', serif">لطيف</option>
+                    <option value="'Scheherazade New', serif">شهرزاد جديدة</option>
+                    <option value="'Noto Naskh Arabic', serif">نوتو نسخ عربي</option>
                 </select>
                 <input type="number" id="notes-font-size" class="font-size-input" min="8" max="72" value="16">
                 <select id="notes-font-weight" class="font-weight-select">
@@ -340,6 +424,12 @@
             </div>
         </div>
         <div class="notes-toolbar-right">
+            <button class="btn btn-info btn-sm" id="add-link-btn" title="إضافة رابط">
+                <i class="fas fa-link"></i>
+            </button>
+            <button class="btn btn-info btn-sm" id="add-image-btn" title="إضافة صورة">
+                <i class="fas fa-image"></i>
+            </button>
             <button class="btn btn-warning btn-sm" id="add-checkbox-btn" title="إضافة خانة اختيار">
                 <i class="fas fa-square-check"></i>
             </button>
@@ -362,7 +452,7 @@
         <button class="format-btn" data-command="underline" title="تحته خط">
             <i class="fas fa-underline"></i>
         </button>
-        <div style="width: 1px; height: 24px; background: var(--theme-border); margin: 0 10px;"></div>
+        <div class="tool-separator"></div>
         <button class="format-btn" data-command="justifyRight" title="محاذاة لليمين">
             <i class="fas fa-align-right"></i>
         </button>
@@ -372,7 +462,7 @@
         <button class="format-btn" data-command="justifyLeft" title="محاذاة لليسار">
             <i class="fas fa-align-left"></i>
         </button>
-        <div style="width: 1px; height: 24px; background: var(--theme-border); margin: 0 10px;"></div>
+        <div class="tool-separator"></div>
         <button class="format-btn" data-command="insertUnorderedList" title="قائمة غير مرقمة">
             <i class="fas fa-list-ul"></i>
         </button>
@@ -383,6 +473,7 @@
     
     <div contenteditable="true" class="notes-content" id="notes-editor-content" placeholder="اكتب ملاحظاتك هنا..."></div>
 </div>
+    
     <!-- تلميحات عامة -->
     <div id="global-tooltip" class="tooltip"></div>
 
