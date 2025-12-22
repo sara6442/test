@@ -2619,10 +2619,9 @@ function switchView(viewName) {
     if (viewName === 'notes') {
         setTimeout(() => {
             setupNotesEditorEvents();
-            renderNotes();
-          setTimeout(() => {
-        addUndoRedoButtons(viewName);
-    }, 50);
+         addUndoRedoButtons(viewName);
+        }, 50);
+    }
 }
 
 function addUndoRedoButtons(viewName) {
