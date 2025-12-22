@@ -129,6 +129,8 @@ function refreshCurrentView() {
     }
 }
 
+
+// ========== إدارة Undo/Redo ==========
 const UndoRedoManager = {
     undoStack: [],
     redoStack: [],
@@ -254,9 +256,12 @@ function setupUndoRedoEvents() {
         });
     });
 }
-// ========== إدارة الثيمات ==========
+
+// ========== الثيم المخصص ==========
 function initializeThemes() {
     console.log("تهيئة الثيمات...");
+    
+    AppState.themes = ['gray', 'black', 'blue', 'beige', 'custom'];
     
     // تحميل الثيم المحفوظ
     const savedTheme = localStorage.getItem('mytasks_theme');
@@ -265,17 +270,15 @@ function initializeThemes() {
         document.body.className = `theme-${savedTheme}`;
         console.log("تم تحميل الثيم المحفوظ:", savedTheme);
         
-        // تحديث ألوان الملاحظات للثيم الحالي
-        updateNotesColorsForTheme(savedTheme);
+        // إذا كان ثيم مخصص، تحميل الألوان
+        if (savedTheme === 'custom') {
+            loadCustomTheme();
+        }
     } else {
         // تعيين الثيم الافتراضي
         AppState.currentTheme = 'gray';
         document.body.className = 'theme-gray';
         localStorage.setItem('mytasks_theme', 'gray');
-        console.log("تم تعيين الثيم الافتراضي: gray");
-        
-        // تحديث ألوان الملاحظات للثيم الافتراضي
-        updateNotesColorsForTheme('gray');
     }
     
     // تحديث الأزرار النشطة
@@ -286,6 +289,79 @@ function initializeThemes() {
     
     // إعدادات الإعدادات
     setupSettingsEvents();
+}
+
+function loadCustomTheme() {
+    const customTheme = JSON.parse(localStorage.getItem('mytasks_custom_theme'));
+    if (customTheme) {
+        document.documentElement.style.setProperty('--theme-bg', customTheme.bgColor);
+        document.documentElement.style.setProperty('--theme-sidebar', `linear-gradient(180deg, ${customTheme.sidebarColor1}, ${customTheme.sidebarColor2})`);
+        document.documentElement.style.setProperty('--theme-primary', customTheme.primaryColor);
+    }
+}
+
+function openCustomThemeCreator() {
+    const modalHTML = `
+        <div class="modal" id="custom-theme-modal">
+            <div class="modal-content" style="max-width: 500px;">
+                <div class="modal-header">
+                    <h3><i class="fas fa-palette"></i> إنشاء ثيم مخصص</h3>
+                    <button class="close-btn" onclick="closeModal('custom-theme-modal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="theme-bg-color">لون الخلفية</label>
+                        <input type="color" id="theme-bg-color" value="#ffffff">
+                    </div>
+                    <div class="form-group">
+                        <label for="theme-sidebar-color1">لون الشريط الجانبي 1</label>
+                        <input type="color" id="theme-sidebar-color1" value="#5a6268">
+                    </div>
+                    <div class="form-group">
+                        <label for="theme-sidebar-color2">لون الشريط الجانبي 2</label>
+                        <input type="color" id="theme-sidebar-color2" value="#495057">
+                    </div>
+                    <div class="form-group">
+                        <label for="theme-primary-color">اللون الأساسي</label>
+                        <input type="color" id="theme-primary-color" value="#6c757d">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeModal('custom-theme-modal')">إلغاء</button>
+                    <button class="btn btn-primary" onclick="saveCustomTheme()">حفظ الثيم</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    const existingModal = document.getElementById('custom-theme-modal');
+    if (existingModal) existingModal.remove();
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    document.getElementById('custom-theme-modal').classList.add('active');
+}
+
+function saveCustomTheme() {
+    const customTheme = {
+        bgColor: document.getElementById('theme-bg-color').value,
+        sidebarColor1: document.getElementById('theme-sidebar-color1').value,
+        sidebarColor2: document.getElementById('theme-sidebar-color2').value,
+        primaryColor: document.getElementById('theme-primary-color').value
+    };
+    
+    localStorage.setItem('mytasks_custom_theme', JSON.stringify(customTheme));
+    localStorage.setItem('mytasks_theme', 'custom');
+    
+    AppState.currentTheme = 'custom';
+    document.body.className = 'theme-custom';
+    
+    // تطبيق الألوان المخصصة
+    document.documentElement.style.setProperty('--theme-bg', customTheme.bgColor);
+    document.documentElement.style.setProperty('--theme-sidebar', `linear-gradient(180deg, ${customTheme.sidebarColor1}, ${customTheme.sidebarColor2})`);
+    document.documentElement.style.setProperty('--theme-primary', customTheme.primaryColor);
+    
+    closeModal('custom-theme-modal');
+    updateThemeButtons();
 }
 
 // دالة جديدة لتحديث ألوان الملاحظات بناءً على الثيم
@@ -690,14 +766,20 @@ function saveNotes() {
     }
 }
 
-// ========== إدارة المهام ==========
+// ========== إضافة مهمة جديدة ==========
 function addTask(taskData) {
     console.log("إضافة مهمة:", taskData);
     
     // التحقق من الحيز الزمني للفئة
-    if (isCategoryFull(taskData.categoryId)) {
-        showCategoryFullOptions(taskData.categoryId, taskData);
-        return;
+    const category = AppState.categories.find(c => c.id === taskData.categoryId);
+    if (category && category.timeframeMinutes) {
+        const categoryTasks = AppState.tasks.filter(task => task.categoryId === taskData.categoryId);
+        const totalDuration = categoryTasks.reduce((sum, task) => sum + (task.duration || 0), 0);
+        
+        if (totalDuration + (taskData.duration || 0) > category.timeframeMinutes) {
+            showCategoryFullOptions(taskData.categoryId, taskData);
+            return;
+        }
     }
     
     const newTask = {
@@ -841,7 +923,11 @@ function renderTasks() {
     // تنظيف الحاوية أولاً
     container.innerHTML = '';
     
-    // ✅ **إضافة تحقق إضافي لمنع التكرار**
+    // ✅ **إزالة الفلاتر السفلية القديمة إن وجدت**
+    const oldFilters = tasksView.querySelector('.task-filters');
+    if (oldFilters) oldFilters.remove();
+    
+    // ✅ **إعداد الفلاتر الرئيسية مرة واحدة فقط**
     if (tasksView && !tasksView.querySelector('.tasks-filters-container')) {
         console.log('إعداد الفلاتر الرئيسية...');
         setupMainPageFilters();
@@ -1059,6 +1145,7 @@ function renderCalendar() {
     }
 }
 
+// ========== الجدول اليومي ==========
 function renderDailyCalendar(container) {
     console.log("📅 عرض الجدول اليومي...");
     
@@ -1098,14 +1185,14 @@ function renderDailyCalendar(container) {
         `;
     } else {
         const timeSlots = [
-                { start: '00:00', end: '04:00', label: 'منتصف الليل (12-4 ص)' },
-                { start: '04:00', end: '06:00', label: 'الفجر (4-6 ص)' },
-                { start: '06:00', end: '12:00', label: 'الصباح (6-12 ص)' },
-                { start: '12:00', end: '15:00', label: 'الظهر (12-3 م)' },
-                { start: '15:00', end: '18:00', label: 'العصر (3-6 م)' },
-                { start: '18:00', end: '19:00', label: 'المغرب (6-7 م)' },
-                { start: '19:00', end: '24:00', label: 'العشاء (7-12 م)' }
-            ];
+            { start: '00:00', end: '04:00', label: 'منتصف الليل (12-4 ص)' },
+            { start: '04:00', end: '06:00', label: 'الفجر (4-6 ص)' },
+            { start: '06:00', end: '12:00', label: 'الصباح (6-12 ص)' },
+            { start: '12:00', end: '15:00', label: 'الظهر (12-3 م)' },
+            { start: '15:00', end: '18:00', label: 'العصر (3-6 م)' },
+            { start: '18:00', end: '19:00', label: 'المغرب (6-7 م)' },
+            { start: '19:00', end: '24:00', label: 'العشاء (7-12 م)' }
+        ];
         
         timeSlots.forEach(slot => {
             const slotTasks = tasksForDay.filter(task => {
@@ -1592,13 +1679,17 @@ function renderCategories() {
     });
 }
 
+
+// ========== إدارة الفئات ==========
 function openAddCategoryModal() {
     AppState.currentCategoryId = null;
     document.getElementById('category-modal-title').textContent = 'إضافة فئة جديدة';
     document.getElementById('category-name').value = '';
     document.getElementById('category-color').value = '#5a76e8';
-    document.getElementById('category-timeframe').value = '60';
-    document.getElementById('category-timeframe-type').value = 'minutes';
+    document.getElementById('category-timeframe').value = '480';
+    document.getElementById('category-message-empty').value = 'لا توجد مهام في هذه الفئة. أضف مهام جديدة لبدء العمل!';
+    document.getElementById('category-message-completed').value = 'ممتاز! لقد أكملت جميع المهام في هذه الفئة.';
+    document.getElementById('category-message-exceeded').value = 'لقد تجاوزت الوقت المخصص لهذه الفئة. حاول إدارة وقتك بشكل أفضل!';
     document.getElementById('category-modal').classList.add('active');
 }
 
@@ -1616,12 +1707,13 @@ function openEditCategoryModal(categoryId) {
     document.getElementById('category-modal').classList.add('active');
 }
 
+
 function saveCategory() {
     UndoRedoManager.saveState('إضافة/تعديل فئة');
     
     const name = document.getElementById('category-name').value.trim();
     const color = document.getElementById('category-color').value;
-    const timeframeMinutes = parseInt(document.getElementById('category-timeframe').value) || 60;
+    const timeframe = parseInt(document.getElementById('category-timeframe').value) || 480;
     
     if (!name) {
         alert('يرجى إدخال اسم الفئة');
@@ -1636,10 +1728,10 @@ function saveCategory() {
                 ...AppState.categories[categoryIndex],
                 name: name,
                 color: color,
-                timeframeMinutes: timeframeMinutes,
-                messageEmpty: document.getElementById('category-message-empty')?.value || 'لا توجد مهام في هذه الفئة',
-                messageCompleted: document.getElementById('category-message-completed')?.value || 'ممتاز! لقد أكملت جميع المهام',
-                messageExceeded: document.getElementById('category-message-exceeded')?.value || 'لقد تجاوزت الوقت المخصص لهذه الفئة'
+                timeframeMinutes: timeframe,
+                messageEmpty: document.getElementById('category-message-empty').value,
+                messageCompleted: document.getElementById('category-message-completed').value,
+                messageExceeded: document.getElementById('category-message-exceeded').value
             };
             saveCategories();
             renderCategories();
@@ -1651,10 +1743,10 @@ function saveCategory() {
             id: generateId(),
             name: name,
             color: color,
-            timeframeMinutes: timeframeMinutes,
-            messageEmpty: document.getElementById('category-message-empty')?.value || 'لا توجد مهام في هذه الفئة',
-            messageCompleted: document.getElementById('category-message-completed')?.value || 'ممتاز! لقد أكملت جميع المهام',
-            messageExceeded: document.getElementById('category-message-exceeded')?.value || 'لقد تجاوزت الوقت المخصص لهذه الفئة'
+            timeframeMinutes: timeframe,
+            messageEmpty: document.getElementById('category-message-empty').value,
+            messageCompleted: document.getElementById('category-message-completed').value,
+            messageExceeded: document.getElementById('category-message-exceeded').value
         };
         
         AppState.categories.push(newCategory);
@@ -1816,29 +1908,20 @@ function setupMainPageFilters() {
         <button class="filter-btn" data-filter="all">الكل</button>
     `;
     
-    // قسم حالة الفئات
-    const statusSection = document.createElement('div');
-    statusSection.style.cssText = 'display: flex; gap: 10px; align-items: center;';
+    // قسم إضافة المهام فقط
+    const addTaskSection = document.createElement('div');
     
-    // زر حالة الفئات
-    const statusBtn = document.createElement('button');
-    statusBtn.id = 'categories-status-btn';
-    statusBtn.className = 'btn btn-info';
-    statusBtn.innerHTML = '<i class="fas fa-chart-pie"></i> حالة الفئات';
-    statusBtn.addEventListener('click', showCategoriesStatusModal);
-    
-    // زر إضافة مهمة جديد (جانب زر حالة الفئات)
+    // زر إضافة مهمة جديد
     const addTaskBtn = document.createElement('button');
     addTaskBtn.className = 'btn btn-primary';
     addTaskBtn.innerHTML = '<i class="fas fa-plus"></i> إضافة مهمة';
     addTaskBtn.addEventListener('click', () => openAddTaskModal());
     
-    statusSection.appendChild(statusBtn);
-    statusSection.appendChild(addTaskBtn);
+    addTaskSection.appendChild(addTaskBtn);
     
     // إضافة الأقسام إلى الحاوية
     filtersContainer.appendChild(filtersSection);
-    filtersContainer.appendChild(statusSection);
+    filtersContainer.appendChild(addTaskSection);
     
     // إدراج الفلاتر قبل قائمة المهام مباشرة
     const tasksList = contentArea.querySelector('#tasks-list');
@@ -1847,6 +1930,15 @@ function setupMainPageFilters() {
     } else {
         contentArea.prepend(filtersContainer);
     }
+    
+    // إضافة أحداث الفلاتر
+    filtersSection.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            filtersSection.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            setFilter(this.dataset.filter);
+        });
+    });
 }
 
 // دالة لعرض نافذة حالات الفئات
@@ -2207,6 +2299,8 @@ function openNoteEditor(noteId) {
         setupNotesEditorEvents();
     }, 100);
 }
+
+// ========== إدارة الملاحظات ==========
 function setupNotesEditorEvents() {
     // ✅ **إضافة تحقق من وجود العناصر قبل إضافة الأحداث**
     const saveNotesBtn = document.getElementById('save-notes-btn');
@@ -2214,16 +2308,11 @@ function setupNotesEditorEvents() {
     const addCheckboxBtn = document.getElementById('add-checkbox-btn');
     const addLinkBtn = document.getElementById('add-link-btn');
     const addImageBtn = document.getElementById('add-image-btn');
-    const fontFamilySelect = document.getElementById('notes-font-family');
-    const fontSizeSelect = document.getElementById('notes-font-size');
-    const fontWeightSelect = document.getElementById('notes-font-weight');
-    const fontStyleSelect = document.getElementById('notes-font-style');
-    const fontColorSelect = document.getElementById('notes-font-color');
     
     // التحقق من وجود كل العناصر المطلوبة
     if (!saveNotesBtn || !closeNotesBtn || !addCheckboxBtn || !addLinkBtn || !addImageBtn) {
         console.warn('⚠️ بعض عناصر محرر الملاحظات غير موجودة في DOM');
-        return; // الخروج من الدالة إذا لم تكن العناصر موجودة
+        return;
     }
     
     // حفظ الملاحظات
@@ -2243,9 +2332,9 @@ function setupNotesEditorEvents() {
         if (!editor) return;
         
         const checkboxHtml = `
-            <div class="note-checkbox-item" contenteditable="false" style="display: flex; align-items: center; gap: 8px; margin: 5px 0;">
+            <div class="note-checkbox-item" contenteditable="false" style="display: flex; align-items: center; gap: 8px; margin: 5px 0; direction: rtl;">
                 <input type="checkbox" class="note-checkbox">
-                <span class="note-checkbox-text" contenteditable="true" style="flex: 1;">عنصر جديد</span>
+                <span class="note-checkbox-text" contenteditable="true" style="flex: 1; color: var(--theme-text);">عنصر جديد</span>
                 <button class="btn-delete-checkbox" style="background: none; border: none; color: var(--danger-color); cursor: pointer; padding: 2px 5px;">
                     <i class="fas fa-times"></i>
                 </button>
@@ -2290,10 +2379,13 @@ function setupNotesEditorEvents() {
     
     // زر إضافة رابط
     addLinkBtn.addEventListener('click', () => {
-        const url = prompt('أدخل الرابط URL:');
-        if (url) {
-            const text = prompt('أدخل النص الذي سيظهر (اتركه فارغاً لإظهار الرابط فقط):', url);
-            if (text !== null) {
+        const selection = window.getSelection();
+        const selectedText = selection.toString();
+        
+        if (selectedText) {
+            // إذا كان هناك نص محدد، أضف رابط للنص المحدد
+            const url = prompt('أدخل الرابط URL للنص المحدد:');
+            if (url) {
                 document.execCommand('createLink', false, url);
                 // تعيين لون الرابط حسب الثيم
                 const link = document.querySelector('#notes-editor-content a[href="' + url + '"]');
@@ -2304,6 +2396,13 @@ function setupNotesEditorEvents() {
                         link.style.color = 'var(--theme-text)';
                     }
                 }
+            }
+        } else {
+            // إذا لم يكن هناك نص محدد، أضف رابط فقط
+            const url = prompt('أدخل الرابط URL:');
+            if (url) {
+                const linkHtml = `<a href="${url}" style="color: ${AppState.currentTheme === 'black' ? '#f0f0f0' : 'var(--theme-text)'};">${url}</a>`;
+                document.execCommand('insertHTML', false, linkHtml);
             }
         }
     });
