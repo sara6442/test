@@ -323,19 +323,24 @@ body {
 
 .task-actions {
     display: flex;
-    gap: 8px;
+    gap: 4px;
     opacity: 0;
-    transition: var(--transition);
+    transition: opacity 0.3s ease;
     position: relative;
-    z-index: 3;
-    margin-top: 25px;
+    z-index: 10;
 }
 
-.task-card:hover .task-actions { opacity: 1; }
+.task-card:hover .task-actions {
+    opacity: 1;
+}
 
 .task-actions .btn {
-    padding: 6px 12px;
-    font-size: 0.85rem;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* ========== علامة متأخرة ========== */
@@ -1025,10 +1030,15 @@ body {
 }
 
 /* ========== الجدول الشهري ========== */
-.monthly-calendar {
+/* استبدال قسم الجدول الشهري بالكامل */
+.monthly-calendar-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 10px;
+    gap: 8px;
+    background: var(--theme-card);
+    border-radius: 12px;
+    padding: 15px;
+    border: 1px solid var(--theme-border);
     margin-top: 20px;
 }
 
@@ -1036,8 +1046,8 @@ body {
     text-align: center;
     font-weight: bold;
     color: var(--theme-primary);
-    padding: 10px 5px;
-    background: var(--theme-card);
+    padding: 12px 4px;
+    background: var(--theme-bg);
     border-radius: 6px;
     font-size: 0.9rem;
 }
@@ -1048,19 +1058,16 @@ body {
     padding: 10px;
     min-height: 120px;
     border: 1px solid var(--theme-border);
+    overflow: hidden;
     position: relative;
     transition: var(--transition);
-}
-
-.month-day:hover {
-    border-color: var(--theme-primary);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
 }
 
 .month-day.today {
     border: 2px solid var(--theme-primary);
-    background: rgba(67, 97, 238, 0.05);
+    background: var(--theme-card);
 }
 
 .day-number {
@@ -1069,37 +1076,34 @@ body {
     color: var(--theme-text);
     font-size: 1rem;
     text-align: center;
+    background: var(--theme-card);
+    padding: 4px 0;
+    z-index: 1;
 }
 
 .month-tasks {
     display: flex;
     flex-direction: column;
     gap: 4px;
-    max-height: 80px;
+    flex: 1;
     overflow-y: auto;
     padding-right: 2px;
 }
 
 .month-task-item {
     cursor: pointer;
-    padding: 4px 6px;
+    padding: 6px;
     border-radius: 4px;
     background: var(--theme-bg);
-    border-right: 2px solid var(--theme-primary);
+    border-left: 3px solid;
     font-size: 0.75rem;
     transition: var(--transition);
+    margin-bottom: 2px;
 }
 
 .month-task-item:hover {
-    background: var(--theme-border);
-}
-
-.monthly-task-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    display: inline-block;
-    margin-left: 4px;
+    transform: translateX(-3px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
 /* ========== النوافذ المنبثقة ========== */
@@ -1269,29 +1273,6 @@ body {
     gap: 8px;
 }
 
-/* ========== أزرار Undo/Redo ========== */
-.undo-redo-container {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    margin: 20px 0;
-    padding: 10px;
-    background: var(--theme-card);
-    border-radius: var(--border-radius);
-    border: 1px solid var(--theme-border);
-}
-
-.undo-redo-container .btn {
-    padding: 8px 12px;
-    font-size: 0.9rem;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.undo-redo-container .btn i {
-    font-size: 0.9rem;
-}
 
 /* ========== تأثيرات خاصة ========== */
 .pulse { animation: pulse 2s infinite; }
@@ -1367,3 +1348,51 @@ body {
 
 /* ========== خطوط عربية جديدة ========== */
 @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Lateef:wght@200;300;400;700&family=Scheherazade+New:wght@400;700&family=Noto+Naskh+Arabic:wght@400;700&family=Reem+Kufi:wght@400;500;600;700&family=Mirza:wght@400;500;600;700&display=swap');
+
+/* إضافة في نهاية الملف */
+#global-undo-redo {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    display: flex;
+    gap: 8px;
+    z-index: 9999;
+    background: var(--theme-card);
+    padding: 8px;
+    border-radius: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border: 1px solid var(--theme-border);
+    transition: var(--transition);
+}
+
+.undo-redo-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: var(--theme-card);
+    color: var(--theme-text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    transition: var(--transition);
+}
+
+.undo-redo-btn:hover {
+    background: var(--theme-primary) !important;
+    color: white !important;
+    transform: scale(1.1);
+}
+
+.undo-redo-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+.undo-redo-btn:disabled:hover {
+    background: var(--theme-card) !important;
+    color: var(--theme-text) !important;
+}
