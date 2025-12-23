@@ -363,252 +363,6 @@ function refreshCurrentView() {
         renderCategoriesStatus();
     }
 }
-// ========== [عرض المهام]{dir="rtl"} ==========
-
-function renderTasks() {
-    const container = document.getElementById('tasks-list');
-    
-    // ✅ أولاً: عرض شريط الفلتر في الأعلى
-    let filterHTML = `
-        <div class="filters-container" style="margin-bottom: 20px;">
-            <div class="task-filters" style="display: flex; gap: 10px; flex-wrap: wrap; background: var(--theme-card); padding: 15px; border-radius: var(--border-radius); border: 1px solid var(--theme-border);">
-                <button class="filter-btn ${AppState.currentFilter === 'all' ? 'active' : ''}" data-filter="all">
-                    <i class="fas fa-list"></i> الكل
-                </button>
-                <button class="filter-btn ${AppState.currentFilter === 'pending' ? 'active' : ''}" data-filter="pending">
-                    <i class="fas fa-clock"></i> المعلقة
-                </button>
-                <button class="filter-btn ${AppState.currentFilter === 'completed' ? 'active' : ''}" data-filter="completed">
-                    <i class="fas fa-check-circle"></i> المكتملة
-                </button>
-                <button class="filter-btn ${AppState.currentFilter === 'overdue' ? 'active' : ''}" data-filter="overdue">
-                    <i class="fas fa-exclamation-triangle"></i> المتأخرة
-                </button>
-                <button class="filter-btn ${AppState.currentFilter === 'deleted' ? 'active' : ''}" data-filter="deleted">
-                    <i class="fas fa-trash"></i> المحذوفة
-                </button>
-            </div>
-            
-            <div style="display: flex; justify-content: flex-end; margin-top: 15px;">
-                <button id="categories-status-btn" class="btn btn-info">
-                    <i class="fas fa-chart-pie"></i> حالة الفئات
-                </button>
-            </div>
-        </div>
-    `;
-    
-    // ✅ إضافة الفلاتر أولاً
-    container.innerHTML = filterHTML;
-    
-    // ✅ الآن: عرض المهام
-    const tasksContainer = document.createElement('div');
-    tasksContainer.id = 'tasks-content-container';
-    container.appendChild(tasksContainer);
-    
-    let tasksToShow = [];
-    let completedTasks = [];
-    let pendingTasks = [];
-    
-    switch(AppState.currentFilter) {
-        case 'pending':
-            pendingTasks = AppState.tasks.filter(task => !task.completed);
-            const overdueTasks = pendingTasks.filter(task => isTaskOverdue(task));
-            const normalTasks = pendingTasks.filter(task => !isTaskOverdue(task));
-            
-            overdueTasks.sort((a, b) => {
-                const dateA = a.date ? new Date(a.date) : new Date(0);
-                const dateB = b.date ? new Date(b.date) : new Date(0);
-                return dateA - dateB;
-            });
-            
-            normalTasks.sort((a, b) => {
-                const dateA = a.date ? new Date(a.date) : new Date(0);
-                const dateB = b.date ? new Date(b.date) : new Date(0);
-                return dateA - dateB;
-            });
-            
-            tasksToShow = [...overdueTasks, ...normalTasks];
-            break;
-            
-        case 'completed':
-            tasksToShow = AppState.tasks.filter(task => task.completed);
-            tasksToShow.sort((a, b) => {
-                const dateA = a.date ? new Date(a.date) : new Date(0);
-                const dateB = b.date ? new Date(b.date) : new Date(0);
-                return dateB - dateA;
-            });
-            break;
-            
-        case 'deleted':
-            tasksToShow = AppState.deletedTasks;
-            break;
-            
-        case 'overdue':
-            tasksToShow = AppState.tasks.filter(task => isTaskOverdue(task) && !task.completed);
-            tasksToShow.sort((a, b) => {
-                const dateA = a.date ? new Date(a.date) : new Date(0);
-                const dateB = b.date ? new Date(b.date) : new Date(0);
-                return dateA - dateB;
-            });
-            break;
-            
-        case 'all':
-            completedTasks = AppState.tasks.filter(task => task.completed);
-            pendingTasks = AppState.tasks.filter(task => !task.completed);
-            
-            const allOverdueTasks = pendingTasks.filter(task => isTaskOverdue(task));
-            const allNormalTasks = pendingTasks.filter(task => !isTaskOverdue(task));
-            
-            allOverdueTasks.sort((a, b) => {
-                const dateA = a.date ? new Date(a.date) : new Date(0);
-                const dateB = b.date ? new Date(b.date) : new Date(0);
-                return dateA - dateB;
-            });
-            
-            allNormalTasks.sort((a, b) => {
-                const dateA = a.date ? new Date(a.date) : new Date(0);
-                const dateB = b.date ? new Date(b.date) : new Date(0);
-                return dateA - dateB;
-            });
-            
-            completedTasks.sort((a, b) => {
-                const dateA = a.date ? new Date(a.date) : new Date(0);
-                const dateB = b.date ? new Date(b.date) : new Date(0);
-                return dateB - dateA;
-            });
-            
-            tasksToShow = [...allOverdueTasks, ...allNormalTasks, ...completedTasks];
-            break;
-    }
-    
-    if (tasksToShow.length === 0) {
-        let message = 'لا توجد مهام';
-        if (AppState.currentFilter === 'pending') message = 'لا توجد مهام نشطة';
-        else if (AppState.currentFilter === 'completed') message = 'لا توجد مهام مكتملة';
-        else if (AppState.currentFilter === 'deleted') message = 'لا توجد مهام محذوفة';
-        else if (AppState.currentFilter === 'overdue') message = 'لا توجد مهام متأخرة';
-        
-        tasksContainer.innerHTML = `
-            <div class="empty-state" style="text-align: center; padding: 60px 20px; color: var(--gray-color);">
-                <i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 20px; opacity: 0.3;"></i>
-                <h3 style="color: var(--theme-text); margin-bottom: 10px;">${message}</h3>
-                ${AppState.currentFilter === 'pending' ? '<p>اضغط على "إضافة مهمة" لإنشاء مهمتك الأولى</p>' : ''}
-            </div>
-        `;
-        return;
-    }
-    
-    let html = '';
-    
-    tasksToShow.forEach(task => {
-        const category = getCategoryById(task.categoryId);
-        const isDeleted = AppState.currentFilter === 'deleted';
-        const isOverdue = isTaskOverdue(task) && !task.completed;
-        
-        const overdueBadge = isOverdue ? `
-            <div class="overdue-badge-container" style="position: absolute; bottom: 10px; left: 10px;">
-                <span class="overdue-badge" style="background: linear-gradient(135deg, #f72585, #b5179e); color: white; padding: 3px 8px; border-radius: 12px; font-size: 0.7rem; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 4px rgba(247, 37, 133, 0.3);">
-                    <i class="fas fa-exclamation-circle" style="font-size: 0.6rem;"></i> متأخرة
-                </span>
-            </div>
-        ` : '';
-        
-        if (isDeleted) {
-            html += `
-                <div class="task-card deleted" data-id="${task.id}">
-                    <div class="task-content">
-                        <div class="task-title" style="color: #999; text-decoration: line-through;">${task.title}</div>
-                        ${task.description ? `<div class="task-description" style="color: #aaa;">${task.description}</div>` : ''}
-                        <div class="task-meta">
-                            <div class="task-meta-item">
-                                <i class="fas fa-tag" style="color: ${category.color}"></i>
-                                <span>${category.name}</span>
-                            </div>
-                            <div class="task-meta-item">
-                                <i class="fas fa-calendar"></i>
-                                <span>${formatDate(task.date)}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="task-actions">
-                        <button class="btn btn-success btn-sm restore-task-btn" data-id="${task.id}" title="استعادة">
-                            <i class="fas fa-undo"></i>
-                        </button>
-                        <button class="btn btn-danger btn-sm permanent-delete-btn" data-id="${task.id}" title="حذف نهائي">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </div>
-            `;
-        } else {
-            html += `
-                <div class="task-card ${task.completed ? 'completed' : ''} ${isOverdue ? 'overdue' : ''}"
-                     data-id="${task.id}"
-                     style="position: relative;"
-                     title="انقر لتعديل المهمة">
-                    <div style="display: flex; align-items: flex-start; gap: 20px;">
-                        <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} style="margin-top: 5px;">
-                        <div class="task-content" style="flex: 1;">
-                            <div class="task-title" style="margin-bottom: 5px; padding-right: 10px;">
-                                ${task.title}
-                            </div>
-                            ${task.description ? `<div class="task-description">${task.description}</div>` : ''}
-                            <div class="task-meta">
-                                <div class="task-meta-item">
-                                    <i class="fas fa-tag" style="color: ${category.color}"></i>
-                                    <span>${category.name}</span>
-                                </div>
-                                <div class="task-meta-item">
-                                    <i class="fas fa-calendar"></i>
-                                    <span>${formatDate(task.date)}</span>
-                                </div>
-                                <div class="task-meta-item">
-                                    <i class="fas fa-clock"></i>
-                                    <span>${task.duration} دقيقة</span>
-                                </div>
-                                <div class="task-meta-item">
-                                    <i class="fas fa-flag" style="color: ${
-                                        task.priority === 'high' ? '#f72585' :
-                                        task.priority === 'medium' ? '#f8961e' : '#4cc9f0'
-                                    }"></i>
-                                    <span>${task.priority === 'high' ? 'عالية' : 
-                                            task.priority === 'medium' ? 'متوسطة' : 'منخفضة'}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    ${overdueBadge}
-                    <div class="task-actions" style="position: absolute; top: 10px; left: 10px;">
-                        <button class="btn btn-secondary btn-sm edit-task-btn" data-id="${task.id}" title="تعديل المهمة">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn btn-danger btn-sm delete-task-btn" data-id="${task.id}" title="حذف">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </div>
-            `;
-        }
-    });
-    
-    tasksContainer.innerHTML = html;
-    
-    // إضافة أحداث للأزرار
-    setupTaskButtonsEvents();
-    
-    // إضافة أحداث للفلاتر بعد إنشائها
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            setFilter(this.dataset.filter);
-        });
-    });
-    
-    // إضافة حدث لزر حالة الفئات
-    const statusBtn = document.getElementById('categories-status-btn');
-    if (statusBtn) {
-        statusBtn.addEventListener('click', showCategoriesStatusModal);
-    }
-}
 
 // ========== إدارة الثيمات ==========
 function initializeThemes() {
@@ -1273,6 +1027,214 @@ function addTaskAnyway(taskData) {
     delete window.timeframeCheck;
     
     alert(`تمت إضافة المهمة "${taskData.title}" على الرغم من تجاوز الحيز الزمني.`);
+}
+
+// ========== عرض المهام ==========
+function renderTasks() {
+    const container = document.getElementById('tasks-list');
+    
+    let tasksToShow = [];
+    let completedTasks = [];
+    let pendingTasks = [];
+    
+    switch(AppState.currentFilter) {
+        case 'pending':
+            pendingTasks = AppState.tasks.filter(task => !task.completed);
+            // فصل المهام المتأخرة
+            const overdueTasks = pendingTasks.filter(task => isTaskOverdue(task));
+            const normalTasks = pendingTasks.filter(task => !isTaskOverdue(task));
+            
+            // ترتيب المهام المتأخرة (الأكثر تأخراً أولاً)
+            overdueTasks.sort((a, b) => {
+                const dateA = a.date ? new Date(a.date) : new Date(0);
+                const dateB = b.date ? new Date(b.date) : new Date(0);
+                return dateA - dateB; // من الأقدم إلى الأحدث
+            });
+            
+            // ترتيب المهام العادية
+            normalTasks.sort((a, b) => {
+                const dateA = a.date ? new Date(a.date) : new Date(0);
+                const dateB = b.date ? new Date(b.date) : new Date(0);
+                return dateA - dateB;
+            });
+            
+            tasksToShow = [...overdueTasks, ...normalTasks];
+            break;
+            
+        case 'completed':
+            tasksToShow = AppState.tasks.filter(task => task.completed);
+            // ترتيب المهام المكتملة من الأحدث إلى الأقدم
+            tasksToShow.sort((a, b) => {
+                const dateA = a.date ? new Date(a.date) : new Date(0);
+                const dateB = b.date ? new Date(b.date) : new Date(0);
+                return dateB - dateA; // من الأحدث إلى الأقدم
+            });
+            break;
+            
+        case 'deleted':
+            tasksToShow = AppState.deletedTasks;
+            break;
+            
+        case 'overdue':
+            tasksToShow = AppState.tasks.filter(task => isTaskOverdue(task) && !task.completed);
+            // ترتيب من الأكثر تأخراً إلى الأقل
+            tasksToShow.sort((a, b) => {
+                const dateA = a.date ? new Date(a.date) : new Date(0);
+                const dateB = b.date ? new Date(b.date) : new Date(0);
+                return dateA - dateB;
+            });
+            break;
+            
+        case 'all':
+            completedTasks = AppState.tasks.filter(task => task.completed);
+            pendingTasks = AppState.tasks.filter(task => !task.completed);
+            
+            // فصل المهام المتأخرة
+            const allOverdueTasks = pendingTasks.filter(task => isTaskOverdue(task));
+            const allNormalTasks = pendingTasks.filter(task => !isTaskOverdue(task));
+            
+            // ترتيب كل مجموعة
+            allOverdueTasks.sort((a, b) => {
+                const dateA = a.date ? new Date(a.date) : new Date(0);
+                const dateB = b.date ? new Date(b.date) : new Date(0);
+                return dateA - dateB;
+            });
+            
+            allNormalTasks.sort((a, b) => {
+                const dateA = a.date ? new Date(a.date) : new Date(0);
+                const dateB = b.date ? new Date(b.date) : new Date(0);
+                return dateA - dateB;
+            });
+            
+            completedTasks.sort((a, b) => {
+                const dateA = a.date ? new Date(a.date) : new Date(0);
+                const dateB = b.date ? new Date(b.date) : new Date(0);
+                return dateB - dateA;
+            });
+            
+            tasksToShow = [...allOverdueTasks, ...allNormalTasks, ...completedTasks];
+            break;
+    }
+    
+    if (tasksToShow.length === 0) {
+        let message = 'لا توجد مهام';
+        if (AppState.currentFilter === 'pending') message = 'لا توجد مهام نشطة';
+        else if (AppState.currentFilter === 'completed') message = 'لا توجد مهام مكتملة';
+        else if (AppState.currentFilter === 'deleted') message = 'لا توجد مهام محذوفة';
+        else if (AppState.currentFilter === 'overdue') message = 'لا توجد مهام متأخرة';
+        
+        container.innerHTML = `
+            <div class="empty-state" style="text-align: center; padding: 60px 20px; color: var(--gray-color);">
+                <i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 20px; opacity: 0.3;"></i>
+                <h3 style="color: var(--theme-text); margin-bottom: 10px;">${message}</h3>
+                ${AppState.currentFilter === 'pending' ? '<p>اضغط على "إضافة مهمة" لإنشاء مهمتك الأولى</p>' : ''}
+            </div>
+        `;
+        return;
+    }
+    
+   let html = '';
+    
+    tasksToShow.forEach(task => {
+        const category = getCategoryById(task.categoryId);
+        const isDeleted = AppState.currentFilter === 'deleted';
+        const isOverdue = isTaskOverdue(task) && !task.completed;
+        
+        // علامة "متأخرة" - نقلها إلى الزاوية اليسرى السفلية
+        const overdueBadge = isOverdue ? `
+            <div class="overdue-badge-container" style="position: absolute; bottom: 10px; left: 10px;">
+                <span class="overdue-badge" style="background: linear-gradient(135deg, #f72585, #b5179e); color: white; padding: 3px 8px; border-radius: 12px; font-size: 0.7rem; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 4px rgba(247, 37, 133, 0.3);">
+                    <i class="fas fa-exclamation-circle" style="font-size: 0.6rem;"></i> متأخرة
+                </span>
+            </div>
+        ` : '';
+        
+        if (isDeleted) {
+            html += `
+                <div class="task-card deleted" data-id="${task.id}">
+                    <div class="task-content">
+                        <div class="task-title" style="color: #999; text-decoration: line-through;">${task.title}</div>
+                        ${task.description ? `<div class="task-description" style="color: #aaa;">${task.description}</div>` : ''}
+                        <div class="task-meta">
+                            <div class="task-meta-item">
+                                <i class="fas fa-tag" style="color: ${category.color}"></i>
+                                <span>${category.name}</span>
+                            </div>
+                            <div class="task-meta-item">
+                                <i class="fas fa-calendar"></i>
+                                <span>${formatDate(task.date)}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="task-actions">
+                        <button class="btn btn-success btn-sm restore-task-btn" data-id="${task.id}" title="استعادة">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                        <button class="btn btn-danger btn-sm permanent-delete-btn" data-id="${task.id}" title="حذف نهائي">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        } else {
+          html += `
+    <div class="task-card ${task.completed ? 'completed' : ''} ${isOverdue ? 'overdue' : ''}" 
+         data-id="${task.id}"
+         style="position: relative;"
+         title="انقر لتعديل المهمة">
+    <div style="display: flex; align-items: flex-start; gap: 20px;">
+        <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} style="margin-top: 5px;">
+        <div class="task-content" style="flex: 1;">
+            <div class="task-title" style="margin-bottom: 5px; padding-right: 10px;">
+                ${task.title}
+            </div>
+                            ${task.description ? `<div class="task-description">${task.description}</div>` : ''}
+                            <div class="task-meta">
+                                <div class="task-meta-item">
+                                    <i class="fas fa-tag" style="color: ${category.color}"></i>
+                                    <span>${category.name}</span>
+                                </div>
+                                <div class="task-meta-item">
+                                    <i class="fas fa-calendar"></i>
+                                    <span>${formatDate(task.date)}</span>
+                                </div>
+                                <div class="task-meta-item">
+                                    <i class="fas fa-clock"></i>
+                                    <span>${task.duration} دقيقة</span>
+                                </div>
+                                <div class="task-meta-item">
+                                    <i class="fas fa-flag" style="color: ${
+                                        task.priority === 'high' ? '#f72585' : 
+                                        task.priority === 'medium' ? '#f8961e' : '#4cc9f0'
+                                    }"></i>
+                                    <span>${task.priority === 'high' ? 'عالية' : task.priority === 'medium' ? 'متوسطة' : 'منخفضة'}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${overdueBadge}
+                    
+                    <div class="task-actions" style="position: absolute; top: 10px; left: 10px;">
+                        <button class="btn btn-secondary btn-sm edit-task-btn" data-id="${task.id}" title="تعديل المهمة">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-danger btn-sm delete-task-btn" data-id="${task.id}" title="حذف">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+    });
+    
+    container.innerHTML = html;
+    
+    // إضافة Tooltip عند المرور على المهام
+    setupTaskHoverEffects();
+    
+    // إضافة أحداث النقر للأزرار
+    setupTaskButtonsEvents();
 }
 
 // دالة جديدة لإضافة أحداث الأزرار
@@ -2446,6 +2408,64 @@ function calculateCategoryStatus(categoryId) {
         completedDuration: completedDuration,
         categoryTimeframe: categoryTimeframeMinutes
     };
+}
+
+function renderCategoriesStatus() {
+    if (AppState.currentView === 'tasks') {
+        const tasksView = document.getElementById('tasks-view');
+        if (!tasksView) return;
+        
+        const taskFilters = tasksView.querySelector('.task-filters');
+        const header = tasksView.querySelector('.header') || tasksView.previousElementSibling;
+        
+        if (taskFilters && header) {
+            // إنشاء حاوية جديدة للفلاتر وحالة الفئات
+            const filtersContainer = document.createElement('div');
+            filtersContainer.style.cssText = `
+                display: flex;
+                flex-direction: column;
+                gap: 15px;
+                margin: 20px 0;
+                padding: 20px;
+                background: var(--theme-card);
+                border-radius: var(--border-radius);
+                border: 1px solid var(--theme-border);
+                box-shadow: var(--box-shadow);
+            `;
+            
+            // قسم الفلاتر
+            const filtersSection = document.createElement('div');
+            filtersSection.style.cssText = 'display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;';
+            filtersSection.innerHTML = taskFilters.innerHTML;
+            
+            // قسم حالة الفئات
+            const statusSection = document.createElement('div');
+            statusSection.style.cssText = 'display: flex; justify-content: flex-end;';
+            
+            // زر حالة الفئات
+            const statusBtn = document.createElement('button');
+            statusBtn.id = 'categories-status-btn';
+            statusBtn.className = 'btn btn-info';
+            statusBtn.innerHTML = '<i class="fas fa-chart-pie"></i> حالة الفئات';
+            statusBtn.addEventListener('click', showCategoriesStatusModal);
+            
+            statusSection.appendChild(statusBtn);
+            
+            // إضافة الأقسام إلى الحاوية
+            filtersContainer.appendChild(filtersSection);
+            filtersContainer.appendChild(statusSection);
+            
+            // إدراج الحاوية بعد الهيدر مباشرة
+            if (header.nextSibling) {
+                header.parentNode.insertBefore(filtersContainer, header.nextSibling);
+            } else {
+                header.parentNode.appendChild(filtersContainer);
+            }
+            
+            // إزالة الفلاتر القديمة
+            taskFilters.remove();
+        }
+    }
 }
 
 function showCategoriesStatusModal() {
@@ -4285,6 +4305,8 @@ window.applyCustomTheme = applyCustomTheme;
 window.showCategoriesStatusModal = showCategoriesStatusModal;
 window.deleteAndReplaceTask = deleteAndReplaceTask;
 window.addTaskAnyway = addTaskAnyway;
+
+// ✅ أضف هذه الدوال الجديدة
 window.changeCalendarDate = changeCalendarDate;
 window.navigateCalendarWeeks = navigateCalendarWeeks;
 window.changeCalendarMonth = changeCalendarMonth;
