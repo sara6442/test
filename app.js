@@ -3169,7 +3169,6 @@ function testAddTaskForm() {
 // مساعدة: إتاحة بعض الدوال على window
 window.openEditTaskModal = openEditTaskModal;
 window.openAddTaskModal = openAddTaskModal;
-window.openEditCategoryModal = openEditCategoryModal;
 window.updateNoteTitle = updateNoteTitle;
 window.openNoteEditor = openNoteEditor;
 window.toggleTaskCompletion = toggleTaskCompletion;
