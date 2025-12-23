@@ -1,45 +1,83 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lan
+    g="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>مهامي - تطبيق إدارة المهام المتقدم</title>
-    <!-- خطوط عربية -->
+    
+    <!-- 1. الخطوط العربية -->
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <!-- Font Awesome -->
+    
+    <!-- 2. Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- أنماط التطبيق -->
+    
+    <!-- 3. أنماط التطبيق -->
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body class="theme-beige">
     <div class="app-container">
+        <!-- الشريط الجانبي -->
         <aside class="sidebar">
             <div class="logo">
                 <h1><i class="fas fa-tasks"></i> <span>مهامي</span></h1>
             </div>
-            <!-- أزرار البحث والإعدادات بشكل أفقي -->
-            <div class="sidebar-top-row">
-                <button id="sidebar-search-btn" class="sidebar-icon-btn" title="بحث عام"><i class="fas fa-search"></i></button>
-                <button id="settings-btn" class="sidebar-icon-btn" title="الإعدادات"><i class="fas fa-cog"></i></button>
-            </div>
+            
             <nav class="nav-menu">
-                <a href="#" class="nav-item active" data-view="tasks"><i class="fas fa-list-check"></i><span>المهام</span></a>
-                <a href="#" class="nav-item" data-view="calendar"><i class="fas fa-calendar-days"></i><span>الجدول</span></a>
-                <a href="#" class="nav-item" data-view="categories"><i class="fas fa-tags"></i><span>الفئات</span></a>
-                <a href="#" class="nav-item" data-view="notes"><i class="fas fa-sticky-note"></i><span>الملاحظات</span></a>
+                <a href="#" class="nav-item active" data-view="tasks">
+                    <i class="fas fa-list-check"></i>
+                    <span>المهام</span>
+                </a>
+                <a href="#" class="nav-item" data-view="calendar">
+                    <i class="fas fa-calendar-days"></i>
+                    <span>الجدول</span>
+                </a>
+                <a href="#" class="nav-item" data-view="categories">
+                    <i class="fas fa-tags"></i>
+                    <span>الفئات</span>
+                </a>
+                <a href="#" class="nav-item" data-view="notes">
+                    <i class="fas fa-sticky-note"></i>
+                    <span>الملاحظات</span>
+                </a>
             </nav>
-            <!-- مربع إعدادات الثيم -->
-            <div class="settings-popup" id="settings-popup">
+            <div class="sidebar-footer">
+                <button class="settings-btn" id="settings-btn">
+                    <i class="fas fa-cog"></i>
+                    <span>الإعدادات</span>
+                </button>
+            </div>    
+            
+                <!-- نافذة الإعدادات (الثيمات فقط) -->
+           <div class="settings-popup" id="settings-popup">
                 <h4>اختر الثيم</h4>
                 <div class="theme-options">
-                    <div class="theme-option" data-theme="gray"><div class="theme-preview theme-gray-preview"></div><span class="theme-name">رمادي</span></div>
-                    <div class="theme-option" data-theme="black"><div class="theme-preview theme-black-preview"></div><span class="theme-name">أسود</span></div>
-                    <div class="theme-option" data-theme="blue"><div class="theme-preview theme-blue-preview"></div><span class="theme-name">أزرق</span></div>
-                    <div class="theme-option" data-theme="beige"><div class="theme-preview theme-beige-preview"></div><span class="theme-name">بيج</span></div>
-                    <div class="theme-option" data-theme="custom"><div class="theme-preview theme-custom-preview"></div><span class="theme-name">مخصص</span></div>
+                    <div class="theme-option active" data-theme="gray">
+                    <div class="theme-preview theme-gray-preview"></div>
+                        <span class="theme-name">رمادي</span>
                 </div>
-            </div>
-        </aside>
+                    <div class="theme-option" data-theme="black">
+                    <div class="theme-preview theme-black-preview"></div>
+                        <span class="theme-name">أسود</span>
+                </div>
+                    <div class="theme-option" data-theme="blue">
+                    <div class="theme-preview theme-blue-preview"></div>
+                        <span class="theme-name">أزرق</span>
+                </div>
+                    <div class="theme-option" data-theme="beige">
+                    <div class="theme-preview theme-beige-preview"></div>
+                        <span class="theme-name">بيج</span>
+                </div>
+                    <div class="theme-option" data-theme="custom">
+                    <div class="theme-preview theme-custom-preview"></div>
+                        <span class="theme-name">مخصص</span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+        <!-- المحتوى الرئيسي -->
         <main class="main-content">
             <header class="header">
                 <div class="header-left">
@@ -47,26 +85,31 @@
                     <div id="current-date" class="current-date"></div>
                 </div>
                 <div>
-                    <button class="btn btn-primary" id="add-task-btn"><i class="fas fa-plus"></i> إضافة مهمة</button>
+                    <!-- زر إضافة مهمة رئيسي فقط هنا -->
+                    <button class="btn btn-primary" id="add-task-btn">
+    <i class="fas fa-plus"></i> إضافة مهمة
+</button>
                 </div>
             </header>
+
+            <!-- منطقة المحتوى -->
             <div class="content-area">
                 <!-- عرض المهام -->
                 <div id="tasks-view" class="view active">
-                    <div class="task-filters" id="task-filters">
-                        <div class="filters-right" style="display: flex; align-items: center;">
-                            <button id="categories-status-btn" class="btn btn-info"><i class="fas fa-chart-pie"></i> حالة الفئات</button>
-                        </div>
-                        <div class="filters-left">
-                            <button class="filter-btn active" data-filter="pending">المهام النشطة</button>
-                            <button class="filter-btn" data-filter="completed">المكتملة</button>
-                            <button class="filter-btn" data-filter="deleted">المحذوفة</button>
-                            <button class="filter-btn" data-filter="overdue">المتأخرة</button>
-                            <button class="filter-btn" data-filter="all">الكل</button>
-                        </div>
+                    <div class="tasks-list" id="tasks-list">
+                        <!-- المهام ستظهر هنا -->
                     </div>
-                    <div class="tasks-list" id="tasks-list"></div>
+                    
+                    <!-- مرشحات المهام -->
+                    <div class="task-filters">
+                        <button class="filter-btn active" data-filter="pending">المهام النشطة</button>
+                        <button class="filter-btn" data-filter="completed">المكتملة</button>
+                        <button class="filter-btn" data-filter="deleted">المحذوفة</button>
+                        <button class="filter-btn" data-filter="overdue">المتأخرة</button>
+                        <button class="filter-btn" data-filter="all">الكل</button>
+                    </div>
                 </div>
+
                 <!-- عرض الجدول -->
                 <div id="calendar-view" class="view">
                     <div class="calendar-controls">
@@ -76,8 +119,11 @@
                             <button class="calendar-tab" data-range="monthly">شهري</button>
                         </div>
                     </div>
-                    <div id="calendar-content"></div>
+                    <div id="calendar-content">
+                        <!-- محتوى الجدول -->
+                    </div>
                 </div>
+
                 <!-- عرض الفئات -->
                 <div id="categories-view" class="view">
                     <div class="categories-header">
@@ -85,10 +131,15 @@
                             <h2 style="color: var(--theme-text);">إدارة الفئات</h2>
                             <p style="color: var(--gray-color); margin-top: 10px;">إدارة فئات المهام وإضافة مهام جديدة لها</p>
                         </div>
-                        <button class="btn btn-primary" id="add-category-btn"><i class="fas fa-plus"></i> فئة جديدة</button>
+                        <button class="btn btn-primary" id="add-category-btn">
+                            <i class="fas fa-plus"></i> فئة جديدة
+                        </button>
                     </div>
-                    <div class="categories-grid" id="categories-list"></div>
+                    <div class="categories-grid" id="categories-list">
+                        <!-- الفئات ستظهر هنا -->
+                    </div>
                 </div>
+
                 <!-- عرض الملاحظات -->
                 <div id="notes-view" class="view">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
@@ -96,81 +147,175 @@
                             <h2 style="color: var(--theme-text);">الملاحظات</h2>
                             <p style="color: var(--gray-color); margin-top: 10px;">إدارة ملاحظاتك الخاصة مع تنسيق متكامل</p>
                         </div>
-                        <button class="btn btn-primary" id="add-note-btn"><i class="fas fa-plus"></i> ملاحظة جديدة</button>
+                        <button class="btn btn-primary" id="add-note-btn">
+                            <i class="fas fa-plus"></i> ملاحظة جديدة
+                        </button>
                     </div>
-                    <div class="notes-grid" id="notes-list"></div>
+                    <div class="notes-grid" id="notes-list">
+                        <!-- الملاحظات ستظهر هنا -->
+                    </div>
                 </div>
             </div>
         </main>
     </div>
-    <!-- نافذة البحث العام المنبثقة -->
-    <div class="modal" id="site-search-modal">
-        <div class="modal-content" style="max-width: 500px;">
+
+    <!-- ========== النوافذ المنبثقة ========== -->
+    
+    <!-- نافذة إضافة مهمة -->
+    <div class="modal" id="add-task-modal">
+        <div class="modal-content" style="max-width: 600px;">
             <div class="modal-header">
-                <h3><i class="fas fa-search"></i> البحث في أنحاء الموقع</h3>
-                <button class="close-btn" onclick="closeModal('site-search-modal')">&times;</button>
+                <h3>إضافة مهمة جديدة</h3>
+                <button class="close-btn" id="close-task-modal">&times;</button>
             </div>
             <div class="modal-body">
-                <input id="site-search-input" type="text" placeholder="ابحث..." style="width:100%;padding:12px; border-radius:8px; border:1px solid var(--theme-border); margin-bottom:15px; font-size:1rem;">
-                <div id="site-search-results"></div>
+              <form id="task-form">
+    <div class="form-group">
+        <label for="task-title">عنوان المهمة *</label>
+        <input type="text" id="task-title" placeholder="أدخل عنوان المهمة" required>
+    </div>
+    <div class="form-group">
+        <label for="task-category">الفئة *</label>
+        <select id="task-category" required>
+            <!-- سيتم ملؤها بواسطة JavaScript -->
+        </select>
+    </div>
+    <div class="form-row">
+        <div class="form-group">
+            <label for="task-date">تاريخ الاستحقاق</label>
+            <input type="date" id="task-date">
+        </div>
+        <div class="form-group">
+            <label for="task-time">الوقت</label>
+            <input type="time" id="task-time">
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="form-group">
+            <label for="task-duration">المدة (دقائق)</label>
+            <input type="number" id="task-duration" min="1" value="30">
+        </div>
+        <div class="form-group">
+            <label for="task-priority">الأولوية</label>
+            <select id="task-priority">
+                <option value="low">منخفضة</option>
+                <option value="medium" selected>متوسطة</option>
+                <option value="high">عالية</option>
+            </select>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="task-description">الوصف</label>
+        <textarea id="task-description" placeholder="أدخل وصف المهمة" rows="4"></textarea>
+    </div>
+</form>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModal('site-search-modal')">إغلاق</button>
+                <button class="btn btn-secondary" id="cancel-task">إلغاء</button>
+                <button class="btn btn-primary" id="save-task">حفظ المهمة</button>
             </div>
         </div>
     </div>
-    <!-- نافذة إضافة/تعديل فئة (دعم الرسائل الثلاث) -->
-    <div class="modal" id="category-modal">
-        <div class="modal-content" style="max-width: 500px;">
+
+    <!-- نافذة تعديل مهمة -->
+    <div class="modal" id="edit-task-modal">
+        <div class="modal-content" style="max-width: 600px;">
             <div class="modal-header">
-                <h3 id="category-modal-title">إضافة/تعديل فئة</h3>
-                <button class="close-btn" id="close-category-modal">&times;</button>
+                <h3>تعديل المهمة</h3>
+                <button class="close-btn" id="close-edit-task-modal">&times;</button>
             </div>
             <div class="modal-body">
-                <form id="category-form">
+                <form id="edit-task-form">
                     <div class="form-group">
-                        <label for="category-name">اسم الفئة *</label>
-                        <input type="text" id="category-name" placeholder="أدخل اسم الفئة" required>
+                        <label for="edit-task-title">عنوان المهمة *</label>
+                        <input type="text" id="edit-task-title" placeholder="أدخل عنوان المهمة" required>
                     </div>
                     <div class="form-group">
-                        <label for="category-color">لون الفئة *</label>
-                        <input type="color" id="category-color" value="#5a76e8" required>
+                        <label for="edit-task-category">الفئة *</label>
+                        <select id="edit-task-category" required>
+                            <option value="">-- اختر الفئة --</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit-task-date">تاريخ الاستحقاق</label>
+                            <input type="date" id="edit-task-date">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-task-time">الوقت</label>
+                            <input type="time" id="edit-task-time">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit-task-duration">المدة (دقائق)</label>
+                            <input type="number" id="edit-task-duration" min="1" value="30">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-task-priority">الأولوية</label>
+                            <select id="edit-task-priority">
+                                <option value="low">منخفضة</option>
+                                <option value="medium" selected>متوسطة</option>
+                                <option value="high">عالية</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label for="category-timeframe">الحيز الزمني (بالدقائق)</label>
-                        <input type="number" id="category-timeframe" min="1" value="60">
-                    </div>
-                    <div class="form-group">
-                        <label for="category-pending-message">رسالة عند وجود مهام معلقة</label>
-                        <input type="text" id="category-pending-message" placeholder="مثال: لديك مهام لم تُنجز بعد!">
-                    </div>
-                    <div class="form-group">
-                        <label for="category-completed-message">رسالة عند اكتمال جميع المهام</label>
-                        <input type="text" id="category-completed-message" placeholder="مثال: جميع المهام منتهية!">
-                    </div>
-                    <div class="form-group">
-                        <label for="category-exceeded-message">رسالة عند تجاوز المهام للحيز الزمني</label>
-                        <input type="text" id="category-exceeded-message" placeholder="مثال: تجاوزت الوقت المسموح!">
+                        <label for="edit-task-description">الوصف</label>
+                        <textarea id="edit-task-description" placeholder="أدخل وصف المهمة" rows="4"></textarea>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" id="cancel-category">إلغاء</button>
-                <button class="btn btn-primary" id="save-category">حفظ الفئة</button>
+                <button class="btn btn-secondary" id="cancel-edit-task">إلغاء</button>
+                <button class="btn btn-primary" id="save-edit-task">حفظ التعديلات</button>
+                <button class="btn btn-danger" id="delete-edit-task">حذف المهمة</button>
             </div>
         </div>
     </div>
-    <!-- محرر الملاحظات (أهم جوانبه المعدلة) -->
+
+    <!-- نافذة إضافة/تعديل فئة -->
+ <!-- نافذة إضافة/تعديل فئة -->
+<div class="modal" id="category-modal">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+            <h3 id="category-modal-title">إضافة فئة جديدة</h3>
+            <button class="close-btn" id="close-category-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="category-form">
+                <div class="form-group">
+                    <label for="category-name">اسم الفئة *</label>
+                    <input type="text" id="category-name" placeholder="أدخل اسم الفئة" required>
+                </div>
+                <div class="form-group">
+                    <label for="category-color">لون الفئة *</label>
+                    <input type="color" id="category-color" value="#5a76e8" required>
+                </div>
+                <div class="form-group">
+                    <label for="category-timeframe">الحيز الزمني (بالدقائق)</label>
+                    <input type="number" id="category-timeframe" placeholder="مثال: 480 دقيقة (8 ساعات)" min="1" value="60">
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="cancel-category">إلغاء</button>
+            <button class="btn btn-primary" id="save-category">حفظ الفئة</button>
+        </div>
+    </div>
+</div>
+    
+    <!-- محرر الملاحظات المتقدم -->
     <div class="notes-editor-container" id="notes-editor">
         <div class="notes-toolbar">
             <div class="notes-toolbar-left">
                 <input type="text" id="notes-editor-title" class="notes-title-input" placeholder="عنوان الملاحظة">
                 <div class="font-controls">
                     <select id="notes-font-family" class="font-select">
-                        <option value="'Cairo', sans-serif">القاهرة</option>
-                        <option value="'Tajawal', sans-serif">تجوال</option>
-                        <option value="'Segoe UI', Tahoma, Geneva, Verdana, sans-serif">سيجو</option>
-                        <option value="'Arial', sans-serif">آريال</option>
+                        <option value="'Segoe UI', Tahoma, Geneva, Verdana, sans-serif">سجوي يو آي</option>
+                        <option value="'Cairo', sans-serif">قاهرة</option>
+                        <option value="'Tajawal', sans-serif">تاجوال</option>
+                        <option value="'Arial', sans-serif">أريال</option>
                         <option value="'Georgia', serif">جورجيا</option>
                     </select>
                     <input type="number" id="notes-font-size" class="font-size-input" min="8" max="72" value="16">
@@ -181,35 +326,74 @@
                         <option value="500">متوسط</option>
                         <option value="700">ثقيل</option>
                     </select>
+                    <select id="notes-font-style" class="font-style-select">
+                        <option value="normal">عادي</option>
+                        <option value="italic">مائل</option>
+                    </select>
                     <input type="color" id="notes-font-color" class="font-color-input" value="#000000">
-                    <button class="btn btn-success btn-sm" id="add-link-btn" title="إضافة رابط"><i class="fas fa-link"></i></button>
-                    <button class="btn btn-info btn-sm" id="add-image-btn" title="إضافة صورة"><i class="fas fa-image"></i></button>
-                    <button class="btn btn-blue btn-sm" id="add-checkbox-btn" title="إضافة خانة" style="padding:6px 10px; font-size:0.9rem;"><i class="fas fa-square-check"></i></button>
-                    <input type="file" id="notes-image-file-input" accept="image/*,image/gif" style="display: none;">
                 </div>
             </div>
+            <div class="image-upload-container" style="margin-right: 10px; border-right: 2px solid var(--theme-border); padding-right: 10px;">
+    <button class="btn btn-info btn-sm" id="image-upload-btn" title="إضافة صورة">
+        <i class="fas fa-image"></i> صورة
+    </button>
+    <input type="file" id="image-file-input" accept="image/*,image/gif" style="display: none;">
+</div>
+            <div class="image-upload-container" style="margin-right: 10px; border-right: 2px solid var(--theme-border); padding-right: 10px;">
+    <button class="btn btn-info btn-sm" id="image-upload-btn" title="إضافة صورة">
+        <i class="fas fa-image"></i> صورة
+    </button>
+    <input type="file" id="image-file-input" accept="image/*,image/gif" style="display: none;">
+</div>
             <div class="notes-toolbar-right">
-                <button class="btn btn-secondary" id="save-notes-btn"><i class="fas fa-save"></i> حفظ</button>
-                <button class="btn btn-danger" id="close-notes-btn"><i class="fas fa-times"></i> إغلاق</button>
+                <button class="btn btn-warning" id="add-checkbox-btn" title="إضافة خانة اختيار">
+                    <i class="fas fa-square-check"></i> خانة اختيار
+                </button>
+                <button class="btn btn-secondary" id="save-notes-btn">
+                    <i class="fas fa-save"></i> حفظ
+                </button>
+                <button class="btn btn-danger" id="close-notes-btn">
+                    <i class="fas fa-times"></i> إغلاق
+                </button>
             </div>
         </div>
+        
         <div class="formatting-tools">
-            <button class="format-btn" data-command="bold" title="عريض"><i class="fas fa-bold"></i></button>
-            <button class="format-btn" data-command="underline" title="تحته خط"><i class="fas fa-underline"></i></button>
-            <div style="width:1px;height:24px;background:var(--theme-border);margin:0 10px;"></div>
-            <button class="format-btn" data-command="justifyRight" title="محاذاة لليمين"><i class="fas fa-align-right"></i></button>
-            <button class="format-btn" data-command="justifyCenter" title="محاذاة للوسط"><i class="fas fa-align-center"></i></button>
-            <button class="format-btn" data-command="justifyLeft" title="محاذاة لليسار"><i class="fas fa-align-left"></i></button>
-            <div style="width:1px;height:24px;background:var(--theme-border);margin:0 10px;"></div>
-            <button class="format-btn" data-command="insertUnorderedList" title="قائمة غير مرقمة"><i class="fas fa-list-ul"></i></button>
-            <button class="format-btn" data-command="insertOrderedList" title="قائمة مرقمة"><i class="fas fa-list-ol"></i></button>
+            <button class="format-btn" data-command="bold" title="عريض">
+                <i class="fas fa-bold"></i>
+            </button>
+            <button class="format-btn" data-command="italic" title="مائل">
+                <i class="fas fa-italic"></i>
+            </button>
+            <button class="format-btn" data-command="underline" title="تحته خط">
+                <i class="fas fa-underline"></i>
+            </button>
+            <div style="width: 1px; height: 24px; background: var(--theme-border); margin: 0 10px;"></div>
+            <button class="format-btn" data-command="justifyLeft" title="محاذاة لليسار">
+                <i class="fas fa-align-left"></i>
+            </button>
+            <button class="format-btn" data-command="justifyCenter" title="محاذاة للوسط">
+                <i class="fas fa-align-center"></i>
+            </button>
+            <button class="format-btn" data-command="justifyRight" title="محاذاة لليمين">
+                <i class="fas fa-align-right"></i>
+            </button>
+            <div style="width: 1px; height: 24px; background: var(--theme-border); margin: 0 10px;"></div>
+            <button class="format-btn" data-command="insertUnorderedList" title="قائمة غير مرقمة">
+                <i class="fas fa-list-ul"></i>
+            </button>
+            <button class="format-btn" data-command="insertOrderedList" title="قائمة مرقمة">
+                <i class="fas fa-list-ol"></i>
+            </button>
         </div>
+        
         <div contenteditable="true" class="notes-content" id="notes-editor-content" placeholder="اكتب ملاحظاتك هنا..."></div>
     </div>
-    <div id="floating-undo-redo" style="position:fixed; left:12px; bottom:12px; display:flex; flex-direction:row; gap:8px; z-index:20000;">
-        <button id="undo-btn" title="تراجع" class="btn btn-sm" style="width:44px;height:44px;border-radius:50%;"><i class="fas fa-undo"></i></button>
-        <button id="redo-btn" title="إعادة" class="btn btn-sm" style="width:44px;height:44px;border-radius:50%;"><i class="fas fa-redo"></i></button>
-    </div>
+
+    <!-- تلميحات عامة -->
+    <div id="global-tooltip" class="tooltip"></div>
+
+    <!-- ملف JavaScript الرئيسي -->
     <script src="app.js"></script>
 </body>
 </html>
