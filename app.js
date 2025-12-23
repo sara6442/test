@@ -163,13 +163,13 @@ function initializeData() {
     }
     
     // تحميل الملاحظات
-    try {
-        const savedNotes = localStorage.getItem('mytasks_notes');
-        AppState.notes = savedNotes ? JSON.parse(savedNotes) : [];
-    } catch (e) {
-        console.error("خطأ في تحميل الملاحظات:", e);
-        AppState.notes = [];
-    }
+        try {
+            const savedNotes = localStorage.getItem('mytasks_notes');
+            AppState.notes = savedNotes ? JSON.parse(savedNotes) : [];
+        } catch (e) {
+            console.error("خطأ في تحميل الملاحظات:", e);
+            AppState.notes = [];
+        }
     
     // بيانات تجريبية إذا لم تكن هناك مهام
     if (AppState.tasks.length === 0) {
@@ -393,6 +393,137 @@ function saveNote() {
     
     document.getElementById('notes-editor').classList.remove('active');
 }
+// ========== إدارة الفئات (وظائف مفقودة) ==========
+function openEditCategoryModal(categoryId) {
+    console.log("📝 فتح نافذة تعديل الفئة:", categoryId);
+    
+    AppState.currentCategoryId = categoryId;
+    const category = AppState.categories.find(c => c.id === categoryId);
+    
+    if (!category) {
+        console.error("❌ الفئة غير موجودة:", categoryId);
+        return;
+    }
+    
+    const modal = document.getElementById('category-modal');
+    const title = document.getElementById('category-modal-title');
+    const nameInput = document.getElementById('category-name');
+    const colorInput = document.getElementById('category-color');
+    const timeframeInput = document.getElementById('category-timeframe');
+    
+    if (!modal || !title || !nameInput || !colorInput || !timeframeInput) {
+        console.error("❌ عناصر نافذة الفئة غير موجودة!");
+        alert('خطأ: عناصر النافذة غير موجودة');
+        return;
+    }
+    
+    title.textContent = 'تعديل الفئة';
+    nameInput.value = category.name;
+    colorInput.value = category.color || '#5a76e8';
+    timeframeInput.value = category.timeframeMinutes || '60';
+    
+    modal.classList.add('active');
+    setTimeout(() => nameInput.focus(), 100);
+}
+
+function saveCategory() {
+    const nameInput = document.getElementById('category-name');
+    const colorInput = document.getElementById('category-color');
+    const timeframeInput = document.getElementById('category-timeframe');
+    
+    if (!nameInput || !colorInput || !timeframeInput) {
+        console.error("❌ عناصر النموذج غير موجودة");
+        return;
+    }
+    
+    const name = nameInput.value.trim();
+    const color = colorInput.value;
+    const timeframeMinutes = parseInt(timeframeInput.value) || 60;
+    
+    if (!name) {
+        alert('يرجى إدخال اسم الفئة');
+        nameInput.focus();
+        return;
+    }
+    
+    if (AppState.currentCategoryId) {
+        // تحديث فئة موجودة
+        const index = AppState.categories.findIndex(c => c.id === AppState.currentCategoryId);
+        if (index !== -1) {
+            AppState.categories[index] = {
+                ...AppState.categories[index],
+                name: name,
+                color: color,
+                timeframeMinutes: timeframeMinutes
+            };
+        }
+    } else {
+        // إضافة فئة جديدة
+        const newCategory = {
+            id: generateId(),
+            name: name,
+            color: color,
+            timeframeMinutes: timeframeMinutes,
+            timeframeType: 'minutes',
+            messagePending: 'هناك مهام معلقة. واصل العمل لإنجازها!',
+            messageCompleted: 'ممتاز! لقد أكملت جميع المهام لهذا اليوم.',
+            messageExceeded: 'لقد تجاوزت الوقت المخصص. حاول إدارة وقتك بشكل أفضل!'
+        };
+        
+        AppState.categories.push(newCategory);
+    }
+    
+    saveCategories();
+    renderCategories();
+    refreshCurrentView();
+    closeModal('category-modal');
+    
+    // إعادة تعيين النموذج
+    if (nameInput) nameInput.value = '';
+    if (colorInput) colorInput.value = '#5a76e8';
+    if (timeframeInput) timeframeInput.value = '60';
+    AppState.currentCategoryId = null;
+}
+
+function saveNotes() {
+    try {
+        localStorage.setItem('mytasks_notes', JSON.stringify(AppState.notes));
+        console.log("✅ تم حفظ الملاحظات");
+    } catch (e) {
+        console.error("❌ خطأ في حفظ الملاحظات:", e);
+    }
+}
+
+// الوظيفتان التاليتان إضافيتان لمعالجة النصوص
+function openEditCategoryMessages(categoryId) {
+    // هذه الوظيفة تحتاج عناصر HTML إضافية (نافذة منبثقة جديدة)
+    // سأقوم بإنشاء نافذة مؤقتة
+    const category = AppState.categories.find(c => c.id === categoryId);
+    if (!category) return;
+    
+    alert(`تعديل رسائل الفئة "${category.name}"\n\nهذه الميزة تتطلب عناصر HTML إضافية.`);
+    
+    // يمكنك تطوير هذه الوظيفة لإنشاء نافذة منبثقة حقيقية
+    // لتحرير الرسائل الثلاثة للفئة
+}
+
+function saveCategoryMessages(categoryId, messages) {
+    // حفظ رسائل الفئة
+    const index = AppState.categories.findIndex(c => c.id === categoryId);
+    if (index !== -1) {
+        AppState.categories[index] = {
+            ...AppState.categories[index],
+            ...messages
+        };
+        saveCategories();
+        renderCategories();
+    }
+}
+
+function saveCategoryEdit() {
+    // هذه نسخة بديلة من saveCategory
+    saveCategory();
+}
 
 function generateId() {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
@@ -558,34 +689,28 @@ function updateNotesColorsForTheme(theme) {
     console.log("تحديث ألوان الملاحظات للثيم:", theme);
     
     if (theme === 'black') {
-        // إذا كان الثيم أسود، نجعل ألوان النص فاتحة
         AppState.notes.forEach(note => {
-            // حفظ اللون الأصلي إذا لم يكن محفوظاً
             if (!note.originalColor) {
                 note.originalColor = note.color || '#000000';
             }
             
-            // تغيير اللون إلى فاتح إذا كان داكن
             const isDarkColor = isColorDark(note.color || note.originalColor);
             if (isDarkColor) {
                 note.color = '#f0f0f0';
             }
         });
     } else {
-        // إذا كان الثيم غير أسود، نرجع الألوان الأصلية
         AppState.notes.forEach(note => {
             if (note.originalColor) {
                 note.color = note.originalColor;
             } else {
-                // إذا لم يكن هناك لون أصلي محفوظ
                 note.color = note.color || '#000000';
             }
         });
     }
     
-    saveNotes();
+    saveNotes();  // تم إصلاحه هنا
     
-    // تحديث العرض إذا كنا في عرض الملاحظات
     if (AppState.currentView === 'notes') {
         renderNotes();
     }
