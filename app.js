@@ -75,13 +75,6 @@ const AppState = {
     currentTheme: 'gray'
 };
 
-Date.prototype.getWeekNumber = function() {
-    const date = new Date(this.getTime());
-    date.setHours(0, 0, 0, 0);
-    date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
-    const week1 = new Date(date.getFullYear(), 0, 4);
-    return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
-};
 
 // ========== وظائف المساعدة ==========
 function generateId() {
@@ -136,6 +129,15 @@ function refreshCurrentView() {
         renderCategoriesStatus();
     }
 }
+
+Date.prototype.getWeekNumber = function() {
+    const date = new Date(this.getTime());
+    date.setHours(0, 0, 0, 0);
+    date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
+    const week1 = new Date(date.getFullYear(), 0, 4);
+    return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+};
+
 
 
 // ========== إدارة Undo/Redo ==========
@@ -985,6 +987,7 @@ function openEditTaskModal(taskId) {
     document.getElementById('edit-task-modal').classList.add('active');
 }
 function renderTasks() {
+    try {
     const container = document.getElementById('tasks-list');
     const tasksView = document.getElementById('tasks-view');
     
@@ -1197,6 +1200,12 @@ tasksToShow.forEach(task => {
                 openEditTaskModal(taskId);
             });
         });
+    } catch (error) {
+        console.error("خطأ في renderTasks:", error);
+        const container = document.getElementById('tasks-list');
+        if(container) {
+            container.innerHTML = `<p style="color:red;">حدث خطأ في عرض المهام. الرجاء تحديث الصفحة.</p>`;
+        }
     }
 }
 
@@ -1224,6 +1233,31 @@ function renderCalendar() {
 }
 
 
+
+
+function setupCalendarTooltips() {
+    document.querySelectorAll('.calendar-task-card, .month-task-item').forEach(card => {
+        const taskId = card.dataset.id;
+        const task = AppState.tasks.find(t => t.id === taskId) || 
+                    AppState.deletedTasks.find(t => t.id === taskId);
+        
+        if (!task) return;
+        
+        const category = getCategoryById(task.categoryId);
+        
+        card.addEventListener('mouseenter', (e) => {
+            showCalendarTaskTooltip(e, taskId);
+        });
+        
+        card.addEventListener('mouseleave', () => {
+            hideCalendarTaskTooltip();
+        });
+        
+        card.addEventListener('click', () => {
+            openEditTaskModal(taskId);
+        });
+    });
+}
 
 // ========== الجدول اليومي مع الأقسام الزمنية الجديدة ==========
 function renderDailyCalendar(container) {
@@ -1482,7 +1516,7 @@ function renderWeeklyCalendar(container) {
     container.innerHTML = html;
     
     setTimeout(() => {
-        setupMonthlyCalendarTooltips();
+      //setupMonthlyCalendarTooltips();
     }, 100);
 }
 
@@ -1657,30 +1691,6 @@ function showCalendarTaskTooltip(event, taskId) {
 function hideCalendarTaskTooltip() {
     const tooltip = document.getElementById('global-tooltip');
     if (tooltip) tooltip.style.display = 'none';
-}
-
-function setupCalendarTooltips() {
-    document.querySelectorAll('.calendar-task-card, .month-task-item').forEach(card => {
-        const taskId = card.dataset.id;
-        const task = AppState.tasks.find(t => t.id === taskId) || 
-                    AppState.deletedTasks.find(t => t.id === taskId);
-        
-        if (!task) return;
-        
-        const category = getCategoryById(task.categoryId);
-        
-        card.addEventListener('mouseenter', (e) => {
-            showCalendarTaskTooltip(e, taskId);
-        });
-        
-        card.addEventListener('mouseleave', () => {
-            hideCalendarTaskTooltip();
-        });
-        
-        card.addEventListener('click', () => {
-            openEditTaskModal(taskId);
-        });
-    });
 }
 
 function renderCategories() {
@@ -3713,16 +3723,7 @@ function initializePage() {
     }
     
     // ========== زر إضافة ملاحظة ==========
-    const addNoteBtn = document.getElementByجاهId('add-note-btn');
-    if (addNoteBtn) {
-        // إزالة جميع الأحداث السابقة أولاً
-        addNoteBtn.replaceWith(addNoteBtn.cloneNode(true));
-        
-        // إضافة الحدث الجديد
-        document.getElementById('add-note-btn').addEventListener('click', () => {
-            addNote();
-        });
-    }
+    document.getElementById('add-category-btn')?.addEventListener('click', openAddCategoryModal);
     
     // ========== زر إضافة مهمة رئيسي ==========
     const addTaskBtn = document.getElementById('add-task-btn');
