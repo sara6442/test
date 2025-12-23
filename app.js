@@ -286,7 +286,7 @@ function applyCustomTheme() {
     const color2 = document.getElementById('custom-color2')?.value || '#3a56d4';
     function adjustColor(color, percent) {
         const num = parseInt(color. slice(1), 16);
-        const amt = Math.round(2. 55 * percent);
+        const amt = Math.round(2.55 * percent);
         const R = Math.min(255, Math.max(0, (num >> 16) + amt));
         const G = Math.min(255, Math.max(0, (num >> 8 & 0x00FF) + amt));
         const B = Math.min(255, Math.max(0, (num & 0x0000FF) + amt));
