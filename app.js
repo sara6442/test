@@ -498,19 +498,6 @@ function isColorDark(color) {
     return brightness < 128;
 }
 
-// دالة لتغيير الثيم
-function changeTheme(theme) {
-    AppState.currentTheme = theme;
-    document.body.className = `theme-${theme}`;
-    localStorage.setItem('mytasks_theme', theme);
-    
-    // تحديث ألوان الملاحظات للثيم الجديد
-    updateNotesColorsForTheme(theme);
-    
-    updateThemeButtons();
-    refreshCurrentView();
-}
-
 // دالة جديدة للإعدادات
 function setupSettingsEvents() {
     // زر الإعدادات
@@ -1081,85 +1068,89 @@ function renderTasks() {
     
     let html = '';
     
-    tasksToShow.forEach(task => {
-        const category = getCategoryById(task.categoryId);
-        const isDeleted = AppState.currentFilter === 'deleted';
-        const isOverdue = isTaskOverdue(task);
-        
-        if (isDeleted) {
-            html += `
-                <div class="task-card deleted" data-id="${task.id}">
-                    <div class="task-content">
-                        <div class="task-title" style="color: #999; text-decoration: line-through;">${task.title}</div>
-                        ${task.description ? `<div class="task-description" style="color: #aaa;">${task.description}</div>` : ''}
-                        <div class="task-meta">
-                            <div class="task-meta-item">
-                                <i class="fas fa-tag" style="color: ${category.color}"></i>
-                                <span>${category.name}</span>
-                            </div>
-                            <div class="task-meta-item">
-                                <i class="fas fa-calendar"></i>
-                                <span>${formatDate(task.date)}</span>
-                            </div>
+   
+tasksToShow.forEach(task => {
+    const category = getCategoryById(task.categoryId);
+    const isDeleted = AppState.currentFilter === 'deleted';
+    const isOverdue = isTaskOverdue(task);
+    
+    // تحديد لون الخلفية بناءً على الثيم
+    const taskBgColor = AppState.currentTheme === 'black' ? 'var(--theme-card)' : 'white';
+    
+    if (isDeleted) {
+        html += `
+            <div class="task-card deleted" data-id="${task.id}" style="background: ${taskBgColor} !important;">
+                <div class="task-content">
+                    <div class="task-title" style="color: #999; text-decoration: line-through;">${task.title}</div>
+                    ${task.description ? `<div class="task-description" style="color: #aaa;">${task.description}</div>` : ''}
+                    <div class="task-meta">
+                        <div class="task-meta-item">
+                            <i class="fas fa-tag" style="color: ${category.color}"></i>
+                            <span>${category.name}</span>
+                        </div>
+                        <div class="task-meta-item">
+                            <i class="fas fa-calendar"></i>
+                            <span>${formatDate(task.date)}</span>
                         </div>
                     </div>
-                    <div class="task-actions">
-                        <button class="btn btn-success btn-sm restore-task-btn" data-id="${task.id}" title="استعادة">
-                            <i class="fas fa-undo"></i>
-                        </button>
-                        <button class="btn btn-danger btn-sm permanent-delete-btn" data-id="${task.id}" title="حذف نهائي">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
                 </div>
-            `;
-        } else {
-            html += `
-                <div class="task-card ${task.completed ? 'completed' : ''} ${isOverdue ? 'overdue' : ''}" 
-                     data-id="${task.id}">
-                    ${isOverdue ? `
-                    <div class="task-overdue-badge" style="position: absolute; top: 10px; left: 10px; background: var(--danger-color); color: white; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 500;">
-                        <i class="fas fa-exclamation-circle"></i> متأخرة
-                    </div>
-                    ` : ''}
-                    <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''}>
-                    <div class="task-content">
-                        <div class="task-title">${task.title}</div>
-                        ${task.description ? `<div class="task-description">${task.description}</div>` : ''}
-                        <div class="task-meta">
-                            <div class="task-meta-item">
-                                <i class="fas fa-tag" style="color: ${category.color}"></i>
-                                <span>${category.name}</span>
-                            </div>
-                            <div class="task-meta-item">
-                                <i class="fas fa-calendar"></i>
-                                <span>${formatDate(task.date)}</span>
-                            </div>
-                            <div class="task-meta-item">
-                                <i class="fas fa-clock"></i>
-                                <span>${task.duration} دقيقة</span>
-                            </div>
-                            <div class="task-meta-item">
-                                <i class="fas fa-flag" style="color: ${
-                                    task.priority === 'high' ? '#f72585' : 
-                                    task.priority === 'medium' ? '#f8961e' : '#4cc9f0'
-                                }"></i>
-                                <span>${task.priority === 'high' ? 'عالية' : task.priority === 'medium' ? 'متوسطة' : 'منخفضة'}</span>
-                            </div>
+                <div class="task-actions">
+                    <button class="btn btn-success btn-sm restore-task-btn" data-id="${task.id}" title="استعادة">
+                        <i class="fas fa-undo"></i>
+                    </button>
+                    <button class="btn btn-danger btn-sm permanent-delete-btn" data-id="${task.id}" title="حذف نهائي">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    } else {
+        html += `
+            <div class="task-card ${task.completed ? 'completed' : ''} ${isOverdue ? 'overdue' : ''}" 
+                 data-id="${task.id}" style="background: ${taskBgColor} !important;">
+                ${isOverdue ? `
+                <div class="task-overdue-badge">
+                    <i class="fas fa-exclamation-circle"></i> متأخرة
+                </div>
+                ` : ''}
+                <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''}>
+                <div class="task-content">
+                    <div class="task-title">${task.title}</div>
+                    ${task.description ? `<div class="task-description">${task.description}</div>` : ''}
+                    <div class="task-meta">
+                        <div class="task-meta-item">
+                            <i class="fas fa-tag" style="color: ${category.color}"></i>
+                            <span>${category.name}</span>
+                        </div>
+                        <div class="task-meta-item">
+                            <i class="fas fa-calendar"></i>
+                            <span>${formatDate(task.date)}</span>
+                        </div>
+                        <div class="task-meta-item">
+                            <i class="fas fa-clock"></i>
+                            <span>${task.duration} دقيقة</span>
+                        </div>
+                        <div class="task-meta-item">
+                            <i class="fas fa-flag" style="color: ${
+                                task.priority === 'high' ? '#f72585' : 
+                                task.priority === 'medium' ? '#f8961e' : '#4cc9f0'
+                            }"></i>
+                            <span>${task.priority === 'high' ? 'عالية' : task.priority === 'medium' ? 'متوسطة' : 'منخفضة'}</span>
                         </div>
                     </div>
-                    <div class="task-actions">
-                        <button class="btn btn-secondary btn-sm edit-task-btn" data-id="${task.id}" title="تعديل المهمة">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn btn-danger btn-sm delete-task-btn" data-id="${task.id}" title="حذف">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
                 </div>
-            `;
-        }
-    });
+                <div class="task-actions">
+                    <button class="btn btn-secondary btn-sm edit-task-btn" data-id="${task.id}" title="تعديل المهمة">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-danger btn-sm delete-task-btn" data-id="${task.id}" title="حذف">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+});
     
     container.innerHTML = html;
     
@@ -3716,13 +3707,13 @@ function initializePage() {
         addCategoryBtn.replaceWith(addCategoryBtn.cloneNode(true));
         
         // إضافة الحدث الجديد
-        document.getElementById('add-category-btn').addEventListener('click', () => {
+        document.getElementById('add-category-btn')?.addEventListener('click', () => {
             openAddCategoryModal();
         });
     }
     
     // ========== زر إضافة ملاحظة ==========
-    const addNoteBtn = document.getElementById('add-note-btn');
+    const addNoteBtn = document.getElementByجاهId('add-note-btn');
     if (addNoteBtn) {
         // إزالة جميع الأحداث السابقة أولاً
         addNoteBtn.replaceWith(addNoteBtn.cloneNode(true));
@@ -3893,6 +3884,8 @@ function initializePage() {
     
     // ========== تحميل العرض الأولي ==========
     renderTasks();
+    setupGlobalUndoRedo();
+
     console.log("✅ التطبيق جاهز للاستخدام!");
     
     // ✅ **تأخير تهيئة بعض الأحداث حتى يتم تحميل كل شيء**
