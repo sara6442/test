@@ -90,7 +90,7 @@ body {
 .theme-black .note-title,
 .theme-black .note-checkbox-item {
     color: #ffffff !important;
-    background-color: #1e1e1e !important;
+    background-color: transparent !important; /* حذف خلفية الكتابة المزعجة في الثيم الأسود */
 }
 
 /* ========== البطاقات والحاويات ========== */
@@ -304,6 +304,18 @@ body {
 
 .settings-btn:hover { background: rgba(255, 255, 255, 0.2); }
 
+/* ========== صندوق البحث فوق الإعدادات ========== */
+.sidebar #global-search {
+    width: calc(100% - 40px);
+    margin: 0 20px 12px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.06);
+    color: white;
+}
+
+/* نافذة الإعدادات */
 .settings-popup {
     position: absolute;
     bottom: 70px;
@@ -341,11 +353,7 @@ body {
 .theme-preview { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--theme-border); }
 .theme-name { font-size: 0.85rem; color: var(--theme-text); }
 
-.theme-gray-preview { background: linear-gradient(45deg, #5a6268, #495057); }
-.theme-black-preview { background: linear-gradient(45deg, #1e1e1e, #2d2d2d); }
-.theme-blue-preview { background: linear-gradient(45deg, #4361ee, #3a56d4); }
-.theme-beige-preview { background: linear-gradient(45deg, #d7ccc8, #bcaaa4); }
-
+/* ========== MAIN ========== */
 .main-content { flex: 1; margin-right: 280px; padding: 25px; transition: var(--transition); }
 
 /* ========== الهيدر ========== */
@@ -409,43 +417,6 @@ body {
     box-shadow: 0 4px 12px rgba(76, 201, 240, 0.3);
 }
 
-.theme-black .btn-primary {
-    background-color: #5a6268 !important;
-    border-color: #6c757d !important;
-}
-
-.theme-black .btn-primary:hover {
-    background-color: #6c757d !important;
-}
-
-.theme-black .btn-secondary {
-    background-color: #444444 !important;
-    color: #ffffff !important;
-    border-color: #555555 !important;
-}
-
-.theme-black .btn-secondary:hover {
-    background-color: #555555 !important;
-}
-
-/* تحسين حالة العناصر المعطلة */
-.btn:disabled,
-input:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-/* زر حالة الفئات */
-.btn-info {
-    background: linear-gradient(135deg, #4cc9f0, #3ab5e0);
-    color: white;
-    border: none;
-}
-
-.btn-info:hover {
-    background: linear-gradient(135deg, #3ab5e0, #2a9ec8);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(76, 201, 240, 0.3);
-}
 /* ========== منطقة المحتوى ========== */
 .content-area {
     background: var(--theme-card);
@@ -463,6 +434,7 @@ input:disabled {
 /* ========== عرض المهام ========== */
 .tasks-list { display: flex; flex-direction: column; gap: 15px; }
 
+/* المهمة - بطاقات */
 .task-card {
     display: flex;
     align-items: center;
@@ -490,39 +462,64 @@ input:disabled {
 .task-actions { display: flex; gap: 10px; opacity: 0; transition: var(--transition); }
 .task-card:hover .task-actions { opacity: 1; }
 
-/* ========== مرشحات المهام ========== */
+/* ========== شريط الفلاتر (معدل لعرضه فوق المهام) ========== */
 .task-filters {
     display: flex;
-    gap: 15px;
-    margin-top: 40px;
-    padding: 25px;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+    padding: 16px;
     background: var(--theme-card);
     border-radius: var(--border-radius);
     border: 1px solid var(--theme-border);
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+}
+
+.task-filters .filters-left {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.task-filters .filters-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .filter-btn {
-    padding: 10px 24px;
-    border: 2px solid var(--theme-border);
-    background: var(--theme-card);
-    border-radius: 25px;
-    cursor: pointer;
-    transition: var(--transition);
-    color: var(--theme-text);
-    font-weight: 500;
+    padding: 8px 20px !important;
+    border: 2px solid var(--theme-border) !important;
+    background: var(--theme-card) !important;
+    border-radius: 20px !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+    color: var(--theme-text) !important;
+    font-weight: 500 !important;
+    font-size: 0.9rem !important;
 }
 
-.filter-btn:hover { border-color: var(--theme-primary); color: var(--theme-primary); transform: translateY(-2px); }
-.filter-btn.active { background: var(--theme-primary); color: white; border-color: var(--theme-primary); }
+.filter-btn:hover {
+    border-color: var(--theme-primary) !important;
+    color: var(--theme-primary) !important;
+    transform: translateY(-2px) !important;
+}
 
-/* ========== عرض الفئات ========== */
+.filter-btn.active {
+    background: var(--theme-primary) !important;
+    color: white !important;
+    border-color: var(--theme-primary) !important;
+}
+
+/* ========== عرض الفئات (تصميم معدل ليظهر بجانب بعضها) ========== */
 .categories-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-.categories-grid { 
-    display: grid; 
-    grid-template-columns: repeat(2, 1fr); 
-    gap: 20px; 
-    margin-top: 25px; 
+.categories-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 25px;
+    align-items: start;
 }
 
 @media (max-width: 768px) {
@@ -568,7 +565,7 @@ input:disabled {
 .category-progress-info { display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--gray-color); margin-bottom: 15px; }
 .category-add-task-btn { width: 100%; margin-top: 15px; }
 
-/* ========== إصلاح عرض الفئات ========== */
+/* ========== إصلاح عرض المهام داخل الفئة وترتيبها ========== */
 .category-tasks-container {
     max-height: 300px;
     overflow-y: auto;
@@ -587,58 +584,10 @@ input:disabled {
     border-right: 3px solid;
     transition: var(--transition);
     cursor: pointer;
-    background: var(--theme-card);
-    border: 1px solid var(--theme-border);
-}
-
-.category-task-item:hover {
-    transform: translateX(-5px);
-    background: var(--theme-border);
-}
-
-.category-task-title {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 5px;
-}
-
-.category-task-title input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    cursor: pointer;
-}
-
-.category-task-meta {
-    display: flex;
-    gap: 15px;
-    font-size: 0.85rem;
-    color: var(--gray-color);
-}
-
-/* شريط المهام داخل الفئة */
-.category-tasks-container {
-    margin: 15px 0;
-    max-height: 300px;
-    overflow-y: auto;
-    padding-right: 10px;
-    border: 1px solid var(--theme-border);
-    border-radius: 8px;
-    padding: 15px;
-    background: var(--theme-card);
-}
-
-.category-task-item {
-    padding: 12px;
-    margin-bottom: 10px;
-    border-radius: 8px;
-    border-right: 3px solid;
-    transition: var(--transition);
-    cursor: pointer;
-    position: relative;
     background: var(--theme-card);
     border: 1px solid var(--theme-border);
     border-bottom: 1px solid var(--theme-border);
+    position: relative;
 }
 
 .category-task-item:last-child { border-bottom: none; margin-bottom: 0; }
@@ -684,18 +633,6 @@ input:disabled {
     color: var(--theme-text);
 }
 
-/* ========== إزالة التكرار في الأزرار ========== */
-.category-actions {
-    display: flex;
-    gap: 8px;
-    opacity: 0;
-    transition: var(--transition);
-}
-
-.category-card:hover .category-actions {
-    opacity: 1;
-}
-
 /* ========== عرض الملاحظات ========== */
 .notes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px; margin-top: 25px; }
 
@@ -735,19 +672,40 @@ input:disabled {
 
 .note-content:focus { outline: none; border-color: var(--theme-primary); }
 
-/* خانة الاختيار في الملاحظات */
+/* خانة الاختيار في الملاحظات - تبسيط: صندوق اختيار واحد مرتبط بالنص */
 .note-checkbox-item { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; padding: 8px; border-radius: 6px; transition: var(--transition); }
-.note-checkbox-item:hover { background: rgba(0,0,0,0.05); }
+.note-checkbox-item:hover { background: rgba(0,0,0,0.03); }
 .note-checkbox-item.completed { opacity: 0.7; }
 .note-checkbox-item.completed .note-checkbox-text { text-decoration: line-through; color: var(--gray-color); }
 
 .note-checkbox { width: 18px; height: 18px; cursor: pointer; accent-color: var(--theme-primary); }
 .note-checkbox-text { flex: 1; font-size: 0.95rem; }
-.note-footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
-.note-font { font-size: 0.85rem; color: var(--gray-color); }
-.note-actions { display: flex; gap: 8px; }
 
-/* محرر الملاحظات المتقدم */
+/* تنظيم تباعد أزرار الحفظ/إغلاق داخل محرر الملاحظات */
+.notes-toolbar {
+    background: var(--theme-card);
+    padding: 15px 25px;
+    border-bottom: 1px solid var(--theme-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+/* نجعل أزرار الحفظ والإغلاق مفصولة بمسافة */
+.notes-toolbar .notes-toolbar-right > * {
+    margin-left: 10px;
+}
+
+/* أدوات إضافية بجانب اللون */
+.enhanced-tools {
+    display: inline-flex;
+    gap: 6px;
+    margin-left: 8px;
+    align-items: center;
+}
+
+/* ========== محرر الملاحظات المتقدم ========== */
 .notes-editor-container {
     position: fixed;
     top: 0;
@@ -761,16 +719,6 @@ input:disabled {
 }
 
 .notes-editor-container.active { display: flex; }
-
-.notes-toolbar {
-    background: var(--theme-card);
-    padding: 15px 25px;
-    border-bottom: 1px solid var(--theme-border);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-}
 
 .notes-toolbar-left { display: flex; align-items: center; gap: 20px; }
 
@@ -928,21 +876,6 @@ input:disabled {
     text-align: center;
     line-height: 30px;
 }
-
-.month-tasks { display: flex; flex-direction: column; gap: 5px; }
-.month-task-dot { width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; display: inline-block; }
-
-.month-task-item {
-    font-size: 0.8rem;
-    padding: 4px 8px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: var(--transition);
-    background: rgba(0,0,0,0.05);
-    margin-bottom: 4px;
-}
-
-.month-task-item:hover { background: rgba(0,0,0,0.1); }
 
 /* ========== النوافذ المنبثقة ========== */
 .modal {
@@ -1131,109 +1064,6 @@ input:disabled {
 .theme-black ::-webkit-scrollbar-thumb:hover {
     background: #666666 !important;
 }
-/* ========== إصلاحات الثيم الأسود وتحسينات ========== */
-
-/* تحسين الثيم الأسود */
-.theme-black {
-    --theme-bg: #121212 !important;
-    --theme-sidebar: linear-gradient(180deg, #1a1a1a, #2d2d2d);
-    --theme-text: #ffffff;
-    --theme-card: #1e1e1e;
-    --theme-border: #444444;
-    --theme-primary: #6c757d;
-    --theme-hover: #5a6268;
-}
-
-/* إصلاح النصوص في الثيم الأسود */
-.theme-black .category-name,
-.theme-black .task-title,
-.theme-black .note-title,
-.theme-black .calendar-task-title,
-.theme-black .modal-header h3,
-.theme-black .header-left h1,
-.theme-black .task-description,
-.theme-black .category-progress-info span,
-.theme-black .note-date,
-.theme-black .note-font,
-.theme-black .calendar-task-meta span,
-.theme-black #page-title,
-.theme-black #current-date,
-.theme-black .header,
-.theme-black .content-area,
-.theme-black .task-filters,
-.theme-black .categories-header h2,
-.theme-black .categories-header p {
-    color: #ffffff !important;
-}
-
-/* إزالة الخلفيات البيضاء */
-.theme-black .category-card,
-.theme-black .task-card,
-.theme-black .note-card,
-.theme-black .modal-content,
-.theme-black .content-area,
-.theme-black .header,
-.theme-black .task-filters,
-.theme-black .time-slot,
-.theme-black .day-column,
-.theme-black .month-day,
-.theme-black .calendar-controls,
-.theme-black .calendar-task-card {
-    background-color: #1e1e1e !important;
-    border-color: #444444 !important;
-}
-
-/* تحسين النصوص في الفئات */
-.theme-black .category-task-item,
-.theme-black .category-task-title,
-.theme-black .category-task-meta span {
-    color: #ffffff !important;
-    background-color: #2d2d2d !important;
-    border-color: #555555 !important;
-}
-
-/* تحسين حقول الإدخال */
-.theme-black input,
-.theme-black select,
-.theme-black textarea,
-.theme-black .form-group input,
-.theme-black .form-group select,
-.theme-black .form-group textarea,
-.theme-black .notes-title-input,
-.theme-black .font-select,
-.theme-black .font-size-input,
-.theme-black .font-weight-select,
-.theme-black .font-style-select {
-    background-color: #2d2d2d !important;
-    color: #ffffff !important;
-    border-color: #555555 !important;
-}
-
-.theme-black input::placeholder,
-.theme-black textarea::placeholder,
-.theme-black .notes-title-input::placeholder {
-    color: #aaaaaa !important;
-}
-
-/* إزالة الخلفيات المستطيلة حول النصوص */
-.theme-black .note-title,
-.theme-black .task-title,
-.theme-black .category-name {
-    background: transparent !important;
-}
-
-/* تحسين شريط التمرير */
-.theme-black ::-webkit-scrollbar-track {
-    background: #2d2d2d !important;
-}
-
-.theme-black ::-webkit-scrollbar-thumb {
-    background: #555555 !important;
-}
-
-.theme-black ::-webkit-scrollbar-thumb:hover {
-    background: #666666 !important;
-}
 
 /* ========== تحسين تصميم حقول الحيز الزمني ========== */
 #category-modal .form-row {
@@ -1256,182 +1086,7 @@ input:disabled {
 }
 
 /* ========== تحسين نافذة الإعدادات ========== */
-.settings-popup {
-    position: absolute;
-    bottom: 70px;
-    right: 20px;
-    background: var(--theme-card);
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-    border: 1px solid var(--theme-border);
-    display: none;
-    z-index: 1000;
-    min-width: 200px;
-    max-width: 300px;
-}
-
-.settings-popup.active {
-    display: block;
-    animation: fadeIn 0.3s ease;
-}
-
-.settings-popup h4 {
-    margin-bottom: 15px;
-    color: var(--theme-text);
-    text-align: center;
-    font-size: 1.1rem;
-}
-
-.theme-options {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-}
-
-.theme-option {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    padding: 12px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: var(--transition);
-    border: 2px solid transparent;
-    background: var(--theme-bg);
-}
-
-.theme-option:hover {
-    background: var(--theme-border);
-    transform: translateY(-2px);
-}
-
-.theme-option.active {
-    border-color: var(--theme-primary);
-    background: rgba(67, 97, 238, 0.1);
-}
-
-.theme-preview {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    border: 2px solid var(--theme-border);
-}
-
-.theme-name {
-    font-size: 0.9rem;
-    color: var(--theme-text);
-    font-weight: 500;
-}
-
-/* ========== إصلاح طول الصفحة ========== */
-.content-area {
-    max-height: calc(100vh - 200px);
-    overflow-y: auto;
-    margin-bottom: 20px;
-}
-
-.tasks-list,
-.categories-grid,
-.notes-grid {
-    max-height: 400px;
-    overflow-y: auto;
-    padding-right: 10px;
-}
-/* ========== إصلاح نصوص الفئات في الثيم الأسود ========== */
-.theme-black .category-task-item .category-task-title,
-.theme-black .category-task-item .category-task-meta,
-.theme-black .category-task-item {
-    color: #ffffff !important;
-}
-
-.theme-black .category-task-item .task-checkbox {
-    accent-color: #6c757d !important;
-}
-
-.theme-black .category-task-item:hover {
-    background-color: #333333 !important;
-}
-
-.theme-black .category-task-item.completed {
-    color: #aaaaaa !important;
-}
-
-.theme-black .category-task-item.completed .category-task-title {
-    text-decoration: line-through;
-    color: #888888 !important;
-}
-
-/* ========== تنسيق نافذة الإعدادات ========== */
-.settings-popup {
-    position: absolute;
-    bottom: 70px;
-    right: 20px;
-    background: var(--theme-card);
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-    border: 1px solid var(--theme-border);
-    display: none;
-    z-index: 1000;
-    min-width: 200px;
-    max-width: 300px;
-}
-
-.settings-popup.active {
-    display: block;
-    animation: fadeIn 0.3s ease;
-}
-
-.settings-popup h4 {
-    margin-bottom: 15px;
-    color: var(--theme-text);
-    text-align: center;
-    font-size: 1.1rem;
-}
-
-.theme-options {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-}
-
-.theme-option {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    padding: 12px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: var(--transition);
-    border: 2px solid transparent;
-    background: var(--theme-bg);
-}
-
-.theme-option:hover {
-    background: var(--theme-border);
-    transform: translateY(-2px);
-}
-
-.theme-option.active {
-    border-color: var(--theme-primary);
-    background: rgba(67, 97, 238, 0.1);
-}
-
-.theme-preview {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    border: 2px solid var(--theme-border);
-}
-
-.theme-name {
-    font-size: 0.9rem;
-    color: var(--theme-text);
-    font-weight: 500;
-}
+/* تم توحيد تنسيق settings-popup أعلى في الملف */
 
 /* ========== إصلاح لون البطاقات حسب الثيم ========== */
 .task-card,
@@ -1462,7 +1117,7 @@ input:disabled {
 }
 
 .category-tasks-container {
-    max-height: 200px;
+    max-height: 250px;
     overflow-y: auto;
 }
 
@@ -1497,135 +1152,54 @@ input:disabled {
     outline: none !important;
 }
 
-/* ========== تنسيق البطاقات في الشريط الجانبي ========== */
-.sidebar {
-    transition: background 0.5s ease;
-}
-
-/* ========== تحسين ثيم الثيمات الأخرى ========== */
-.theme-gray .task-card::before {
-    background: linear-gradient(180deg, #5a6268, #495057);
-}
-
-.theme-black .task-card::before {
-    background: linear-gradient(180deg, #1a1a1a, #2d2d2d);
-}
-
-.theme-blue .task-card::before {
-    background: linear-gradient(180deg, #4361ee, #3a56d4);
-}
-
-.theme-beige .task-card::before {
-    background: linear-gradient(180deg, #d7ccc8, #bcaaa4);
-}
-
-.theme-custom .task-card::before {
-    background: linear-gradient(180deg, var(--custom-color1), var(--custom-color2));
-}
-
-/* ========== جعل المحتوى طويلاً بدون شريط تمرير داخلي ========== */
-.content-area {
-    background-color: var(--theme-bg) !important;
-    border-radius: var(--border-radius);
-    padding: 30px;
-    box-shadow: var(--box-shadow);
-    min-height: calc(100vh - 150px); /* جعل المحتوى طويلاً */
-    border: 1px solid var(--theme-border);
-    transition: var(--transition);
-    /* إزالة overflow-y */
-    overflow-y: visible !important;
-    max-height: none !important;
-}
-
-/* إزالة شريط التمرير من الحاويات الداخلية */
-.tasks-list,
-.categories-grid,
-.notes-grid,
-.categories-status-container {
-    max-height: none !important;
-    overflow-y: visible !important;
-    padding-right: 0 !important;
-}
-
-/* الحفاظ على شريط التمرير الداخلي فقط للمهام داخل الفئات */
-.category-tasks-container {
-    max-height: 250px;
-    overflow-y: auto;
-    padding-right: 10px;
-    margin: 15px 0;
-    background: var(--theme-card);
+/* ========== تحسين مظهر الصور داخل الملاحظات ========== */
+.note-embedded-image,
+.note-embedded-image img,
+.note-image-wrapper img,
+.note-content img {
+    max-width: 100%;
+    height: auto;
     border-radius: 8px;
-    border: 1px solid var(--theme-border);
-    padding: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 
-/* ========== تحسين الشريط الجانبي ========== */
-.main-content {
-    flex: 1;
-    margin-right: 280px;
-    padding: 25px;
-    transition: var(--transition);
-    /* إضافة شريط تمرير رئيسي */
-    overflow-y: auto;
-    height: 100vh;
+/* صورة مضمّنة مع زر حذف */
+.note-image-wrapper {
+    position: relative;
+    display: inline-block;
+    margin: 8px 0;
 }
 
-/* تحسين شريط التمرير الرئيسي */
-.main-content::-webkit-scrollbar {
-    width: 10px;
-}
-
-.main-content::-webkit-scrollbar-track {
-    background: var(--theme-bg);
-}
-
-.main-content::-webkit-scrollbar-thumb {
-    background: var(--theme-primary);
-    border-radius: 5px;
-}
-
-.main-content::-webkit-scrollbar-thumb:hover {
-    background: var(--theme-hover);
-}
-
-/* ========== تحسين الجدول الزمني ========== */
-.daily-calendar,
-.weekly-calendar,
-.monthly-calendar {
-    max-height: none !important;
-    overflow-y: visible !important;
-}
-
-/* جعل خلايا الجدول أطول */
-.month-day {
-    min-height: 150px; /* زيادة الارتفاع */
-    max-height: 200px; /* زيادة الارتفاع الأقصى */
-}
-
-.day-column {
-    min-height: 500px; /* زيادة ارتفاع الأعمدة الأسبوعية */
-}
-
-/* ========== تحسين علامة "متأخرة" ========== */
-.overdue-badge-container {
+.note-image-wrapper .remove-image-btn {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    background: rgba(0,0,0,0.6);
+    color: #fff;
+    border: none;
+    padding: 4px 6px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.75rem;
     z-index: 5;
 }
 
-.overdue-badge {
-    background: linear-gradient(135deg, #f72585, #b5179e) !important;
-    color: white !important;
-    padding: 3px 10px !important;
-    border-radius: 15px !important;
-    font-size: 0.75rem !important;
-    font-weight: 600 !important;
-    box-shadow: 0 2px 5px rgba(247, 37, 133, 0.3);
-    animation: pulseOverdue 2s infinite;
+/* السماح بسحب الصورة داخل المحرر (drag) وإظهار مؤشر اليد */
+.note-embedded-image {
+    cursor: grab;
 }
 
-@keyframes pulseOverdue {
-    0% { box-shadow: 0 0 0 0 rgba(247, 37, 133, 0.4); }
-    70% { box-shadow: 0 0 0 6px rgba(247, 37, 133, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(247, 37, 133, 0); }
+/* مقبض لتغيير الحجم بسيط */
+.note-image-resizer {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    right: 6px;
+    bottom: 6px;
+    background: rgba(0,0,0,0.5);
+    border-radius: 2px;
+    cursor: nwse-resize;
+    z-index: 6;
 }
 
 /* ========== تحسين أزرار المهام ========== */
@@ -1654,92 +1228,8 @@ input:disabled {
     border-radius: 8px !important;
 }
 
-/* ========== تحسين الفلاتر وزر الحالة ========== */
-.task-filters {
-    display: flex !important;
-    gap: 10px !important;
-    flex-wrap: wrap !important;
-    margin-top: 40px !important;
-    padding: 20px !important;
-    background: var(--theme-card) !important;
-    border-radius: var(--border-radius) !important;
-    border: 1px solid var(--theme-border) !important;
-}
-
-.filter-btn {
-    padding: 8px 20px !important;
-    border: 2px solid var(--theme-border) !important;
-    background: var(--theme-card) !important;
-    border-radius: 20px !important;
-    cursor: pointer !important;
-    transition: all 0.3s ease !important;
-    color: var(--theme-text) !important;
-    font-weight: 500 !important;
-    font-size: 0.9rem !important;
-}
-
-.filter-btn:hover {
-    border-color: var(--theme-primary) !important;
-    color: var(--theme-primary) !important;
-    transform: translateY(-2px) !important;
-}
-
-.filter-btn.active {
-    background: var(--theme-primary) !important;
-    color: white !important;
-    border-color: var(--theme-primary) !important;
-}
-
 /* ========== تحسين نافذة الإعدادات ========== */
-.settings-popup {
-    position: absolute !important;
-    bottom: 70px !important;
-    right: 20px !important;
-    background: var(--theme-card) !important;
-    border-radius: 12px !important;
-    padding: 20px !important;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2) !important;
-    border: 1px solid var(--theme-border) !important;
-    display: none !important;
-    z-index: 1000 !important;
-    min-width: 220px !important;
-}
-
-.settings-popup.active {
-    display: block !important;
-    animation: slideUp 0.3s ease !important;
-}
-
-@keyframes slideUp {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* ========== تحسين أزرار الثيم ========== */
-.theme-option {
-    cursor: pointer !important;
-    transition: all 0.3s ease !important;
-    border: 2px solid transparent !important;
-    border-radius: 10px !important;
-    padding: 10px !important;
-    text-align: center !important;
-}
-
-.theme-option:hover {
-    transform: translateY(-3px) !important;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1) !important;
-}
-
-.theme-option.active {
-    border-color: var(--theme-primary) !important;
-    background: rgba(67, 97, 238, 0.1) !important;
-}
+/* تم توحيد إعدادات الـ settings-popup أعلى في الملف */
 
 /* ========== تحسين الجدول الزمني ========== */
 .calendar-task-card {
@@ -1763,7 +1253,7 @@ input:disabled {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.02);
     opacity: 0;
     transition: opacity 0.3s ease;
 }
@@ -1772,7 +1262,7 @@ input:disabled {
     opacity: 1;
 }
 
-/* ========== تحسين علامة "متأخرة" في الزاوية اليسرى ========== */
+/* ========== علامة متأخرة ========== */
 .overdue-badge-container {
     z-index: 5;
     animation: fadeIn 0.3s ease;
@@ -1790,23 +1280,6 @@ input:disabled {
     align-items: center !important;
     gap: 5px !important;
     animation: pulse 2s infinite !important;
-}
-
-/* ========== تحسين الجدول اليومي ========== */
-.daily-calendar {
-    max-height: 500px;
-    overflow-y: auto;
-    padding-right: 10px;
-    scroll-behavior: smooth;
-}
-
-.time-slot {
-    margin-bottom: 20px;
-    transition: all 0.3s ease;
-}
-
-.time-slot:hover {
-    transform: translateX(-5px);
 }
 
 /* ========== تحسين أزرار التنقل في الجدول ========== */
@@ -1860,14 +1333,18 @@ input:disabled {
 }
 
 /* ========== تحسين الروابط في الملاحظات ========== */
+/* روابط الملاحظات تتبع لون النص الافتراضي (inherit)، والثيم الأسود يفرض اللون الأبيض */
 .note-content a {
-    color: var(--theme-primary);
+    color: inherit;
     text-decoration: underline;
     transition: color 0.3s ease;
 }
 
+.theme-black .note-content a {
+    color: #ffffff !important;
+}
+
 .note-content a:hover {
-    color: var(--theme-hover);
     text-decoration: none;
 }
 
@@ -1906,6 +1383,7 @@ input:disabled {
 .calendar-tooltip:hover {
     display: block !important;
 }
+
 /* ========== تصغير حجم المهام في الجدول ========== */
 .calendar-task-card {
     min-height: 45px !important;
@@ -2026,8 +1504,35 @@ input:disabled {
     font-weight: 600 !important;
 }
 
-/* ========== إضافة تأثير النقر ========== */
-.calendar-task-card:active,
-.month-task-item:active {
-    transform: scale(0.98) !important;
+/* ========== إضافة Undo / Redo عائمين في أسفل يسار الصفحة ========== */
+#floating-undo-redo {
+    position: fixed;
+    left: 12px;
+    bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 20000;
 }
+
+#floating-undo-redo button {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--theme-card);
+    border: 1px solid var(--theme-border);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    cursor: pointer;
+    transition: transform .12s ease, box-shadow .12s ease;
+}
+
+#floating-undo-redo button:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.12); }
+
+/* ========== تحسين التوافق مع RTL والمحاذاة العربية ========== */
+/* عند استخدام محاذاة داخل المحرر، العمليات تتم برمجياً لضمان محاذاة عربية صحيحة.
+   في CSS نترك القيم المرنة لكي لا تعكس الاتجاه بعكس المطلوب. */
+
+/* ========== النهاية ========== */
